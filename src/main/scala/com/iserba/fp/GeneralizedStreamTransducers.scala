@@ -1,5 +1,9 @@
 package com.iserba.fp
 
+import language.implicitConversions
+import language.higherKinds
+import language.postfixOps
+
 object GeneralizedStreamTransducers {
 
   /*

@@ -1,3 +1,3 @@
 # pet_fp
 
-simple pet rpoject server + client using FP concepts
+simple pet project web server + client using FP red book concepts
