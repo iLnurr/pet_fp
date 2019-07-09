@@ -3,6 +3,7 @@ package com.iserba.fp
 import language.implicitConversions
 import language.higherKinds
 import language.postfixOps
+import algebra._
 
 object GeneralizedStreamTransducers {
 
