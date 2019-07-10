@@ -1,6 +1,7 @@
 package com.iserba.fp
 
-import com.iserba.fp.algebra._
+import com.iserba.fp.utils.Monad.MonadCatch
+import utils.Par
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
@@ -33,9 +34,9 @@ object impl {
       p.future
     }
     def attempt[A](a: Future[A]): Future[Either[Throwable, A]] =
-      a.map(Right(_)).recover{case ex => Left(ex)}
+      monadCatchFuture.attempt(a)
     def fail[A](t: Throwable): Future[A] =
-      Future.failed(t)
+      monadCatchFuture.fail(t)
     def eval[A](r: => A): Future[A] =
       Future.apply(r)
 
@@ -44,7 +45,7 @@ object impl {
       scala.concurrent.Await.result(p, Duration.Inf)
   }
 
-  implicit def scalaFuture(implicit ec: ExecutionContext): MonadCatch[Future] = new MonadCatch[Future] {
+  implicit def monadCatchFuture(implicit ec: ExecutionContext): MonadCatch[Future] = new MonadCatch[Future] {
     def attempt[A](a: Future[A]): Future[Either[Throwable, A]] =
       a.map(Right(_)).recoverWith {case ex => Future.successful(Left(ex))}
     def fail[A](t: Throwable): Future[A] =

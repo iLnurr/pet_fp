@@ -1,11 +1,12 @@
 package com.iserba.fp
 
+import com.iserba.fp.utils.Monad.MonadCatch
+
 import language.implicitConversions
 import language.higherKinds
 import language.postfixOps
-import algebra._
 
-object GeneralizedStreamTransducers {
+object StreamTransducers {
 
   /*
 

@@ -1,9 +1,22 @@
-package com.iserba.fp
+package com.iserba.fp.utils
 
-import algebra._
-import scala.language.{higherKinds, postfixOps}
+import scala.language.{higherKinds, implicitConversions}
+import Free._
 
-object IO3 {
+sealed trait Free[F[_],A] {
+  def unit(a: => A): Free[F,A] =
+    Return[F,A](a)
+  def flatMap[B](f: A => Free[F,B]): Free[F,B] =
+    FlatMap(this, f)
+  def map[B](f: A => B): Free[F,B] =
+    flatMap(f andThen (Return(_)))
+}
+object Free {
+  case class Return[F[_],A](a: A) extends Free[F, A]
+  case class Suspend[F[_],A](s: F[A]) extends Free[F, A]
+  case class FlatMap[F[_],A,B](s: Free[F, A],
+                               f: A => Free[F, B]) extends Free[F, B]
+
   def freeMonad[F[_]]: Monad[({type f[a] = Free[F,a]})#f] = new Monad[({type f[a] = Free[F, a]})#f] {
     override def unit[A](a: => A): Free[F, A] =
       Return[F,A](a)
@@ -51,7 +64,7 @@ object IO3 {
   }
 
   def runFree[F[_],G[_],A](free: Free[F,A])(t: F ~> G)(
-                           implicit G: Monad[G]): G[A] =
+    implicit G: Monad[G]): G[A] =
     step(free) match {
       case Return(a) => G.unit(a)
       case Suspend(r) => t(r)
