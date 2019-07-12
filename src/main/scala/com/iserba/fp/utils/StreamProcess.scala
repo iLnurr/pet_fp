@@ -1,38 +1,38 @@
 package com.iserba.fp.utils
 
 import com.iserba.fp.utils.Monad.MonadCatch
-import com.iserba.fp.utils.Process._
+import com.iserba.fp.utils.StreamProcess._
 import Helper._
 
 import language.implicitConversions
 import language.higherKinds
 import language.postfixOps
 
-trait Process[F[_],O] {
-  def ++(p: => Process[F,O]): Process[F,O] = this.onHalt {
+trait StreamProcess[F[_],O] {
+  def ++(p: => StreamProcess[F,O]): StreamProcess[F,O] = this.onHalt {
     case End => Try(p)
     case err => Halt(err)
   }
 
-  def flatMap[O2](f: O => Process[F,O2]): Process[F,O2] =
+  def flatMap[O2](f: O => StreamProcess[F,O2]): StreamProcess[F,O2] =
     this match {
       case Halt(err) => Halt(err)
       case Emit(o, t) => Try(f(o)) ++ t.flatMap(f)
       case Await(req,recv) =>
         Await(req, recv andThen (_ flatMap f))
     }
-  def join[A](p: Process[F,Process[F,A]]): Process[F,A] =
+  def join[A](p: StreamProcess[F,StreamProcess[F,A]]): StreamProcess[F,A] =
     p.flatMap(pp => pp)
   /*
      * Like `++`, but _always_ runs `p`, even if `this` halts with an error.
      */
-  def onComplete(p: => Process[F,O]): Process[F,O] =
+  def onComplete(p: => StreamProcess[F,O]): StreamProcess[F,O] =
     this.onHalt {
       case End => p.asFinalizer
       case err => p.asFinalizer ++ Halt(err) // we always run `p`, but preserve any errors
     }
 
-  def asFinalizer: Process[F,O] = this match {
+  def asFinalizer: StreamProcess[F,O] = this match {
     case Emit(h, t) => Emit(h, t.asFinalizer)
     case Halt(e) => Halt(e)
     case Await(req,recv) => await(req) {
@@ -41,14 +41,14 @@ trait Process[F[_],O] {
     }
   }
 
-  def onHalt(f: Throwable => Process[F,O]): Process[F,O] = this match {
+  def onHalt(f: Throwable => StreamProcess[F,O]): StreamProcess[F,O] = this match {
     case Halt(e) => Try(f(e))
     case Emit(h, t) => Emit(h, t.onHalt(f))
     case Await(req,recv) => Await(req, recv andThen (_.onHalt(f)))
   }
 
   def runLog(implicit F: MonadCatch[F]): F[IndexedSeq[O]] = {
-    def go(cur: Process[F,O], acc: IndexedSeq[O]): F[IndexedSeq[O]] =
+    def go(cur: StreamProcess[F,O], acc: IndexedSeq[O]): F[IndexedSeq[O]] =
       cur match {
         case Emit(h,t) => go(t, acc :+ h)
         case Halt(End) => F.unit(acc)
@@ -58,7 +58,7 @@ trait Process[F[_],O] {
     go(this, IndexedSeq())
   }
 
-  def |>[O2](p2: Process1[O,O2]): Process[F,O2] = {
+  def |>[O2](p2: Process1[O,O2]): StreamProcess[F,O2] = {
     p2 match {
       case Halt(e) => this.kill onHalt { e2 => Halt(e) ++ Halt(e2) }
       case Emit(h, t) => Emit(h, this |> t)
@@ -69,11 +69,11 @@ trait Process[F[_],O] {
       }
     }
   }
-  def pipe[O2](p2: Process1[O,O2]): Process[F,O2] =
+  def pipe[O2](p2: Process1[O,O2]): StreamProcess[F,O2] =
     this |> p2
 
   @annotation.tailrec
-  final def kill[O2]: Process[F,O2] = this match {
+  final def kill[O2]: StreamProcess[F,O2] = this match {
     case Await(req,recv) => recv(Left(Kill)).drain.onHalt {
       case Kill => Halt(End) // we convert the `Kill` exception back to normal termination
       case e => Halt(e)
@@ -81,13 +81,13 @@ trait Process[F[_],O] {
     case Halt(e) => Halt(e)
     case Emit(h, t) => t.kill
   }
-  final def drain[O2]: Process[F,O2] = this match {
+  final def drain[O2]: StreamProcess[F,O2] = this match {
     case Halt(e) => Halt(e)
     case Emit(h, t) => t.drain
     case Await(req,recv) => Await(req, recv andThen (_.drain))
   }
 
-  def tee[O2,O3](p2: Process[F,O2])(t: Tee[O,O2,O3]): Process[F,O3] = {
+  def tee[O2,O3](p2: StreamProcess[F,O2])(t: Tee[O,O2,O3]): StreamProcess[F,O3] = {
     t match {
       case Halt(e) => this.kill onComplete p2.kill onComplete Halt(e)
       case Emit(h,t) => Emit(h, (this tee p2)(t))
@@ -108,33 +108,33 @@ trait Process[F[_],O] {
     }
   }
 
-  def repeat: Process[F,O] =
+  def repeat: StreamProcess[F,O] =
     this ++ this.repeat
 
-  def zipWith[O2,O3](p2: Process[F,O2])(f: (O,O2) => O3): Process[F,O3] =
+  def zipWith[O2,O3](p2: StreamProcess[F,O2])(f: (O,O2) => O3): StreamProcess[F,O3] =
     (this tee p2)(Helper.zipWith(f))
 
-  def zip[O2](p2: Process[F,O2]): Process[F,(O,O2)] =
+  def zip[O2](p2: StreamProcess[F,O2]): StreamProcess[F,(O,O2)] =
     zipWith(p2)((_,_))
 
-  def to[O2](sink: Sink[F,O]): Process[F,Unit] =
+  def to[O2](sink: Sink[F,O]): StreamProcess[F,Unit] =
     join { (this zipWith sink)((o,f) => f(o)) }
 
-  def through[O2](p2: Channel[F, O, O2]): Process[F,O2] =
+  def through[O2](p2: Channel[F, O, O2]): StreamProcess[F,O2] =
     join { (this zipWith p2)((o,f) => f(o)) }
 }
 
-object Process {
-  case class Await[F[_],A,O](req: F[A], recv: Either[Throwable,A] => Process[F,O]) extends Process[F,O]
-  case class Emit[F[_],O](head: O, tail: Process[F,O]) extends Process[F,O]
-  case class Halt[F[_],O](err: Throwable) extends Process[F,O]
+object StreamProcess {
+  case class Await[F[_],A,O](req: F[A], recv: Either[Throwable,A] => StreamProcess[F,O]) extends StreamProcess[F,O]
+  case class Emit[F[_],O](head: O, tail: StreamProcess[F,O]) extends StreamProcess[F,O]
+  case class Halt[F[_],O](err: Throwable) extends StreamProcess[F,O]
 
   case class Is[I]() {
     sealed trait f[X]
     val Get = new f[I] {}
   }
   def Get[I] = Is[I]().Get
-  type Process1[I,O] = Process[Is[I]#f, O]
+  type Process1[I,O] = StreamProcess[Is[I]#f, O]
 
   case class T[I,I2]() {
     sealed trait f[X] { def get: Either[I => X, I2 => X] }
@@ -143,15 +143,15 @@ object Process {
   }
   def L[I,I2] = T[I,I2]().L
   def R[I,I2] = T[I,I2]().R
-  type Tee[I,I2,O] = Process[T[I,I2]#f, O]
+  type Tee[I,I2,O] = StreamProcess[T[I,I2]#f, O]
 
-  type Sink[F[_],O] = Process[F, O => Process[F,Unit]]
+  type Sink[F[_],O] = StreamProcess[F, O => StreamProcess[F,Unit]]
 
-  type Channel[F[_],I,O] = Process[F, I => Process[F,O]]
+  type Channel[F[_],I,O] = StreamProcess[F, I => StreamProcess[F,O]]
 }
 
 object Helper {
-  def Try[F[_],O](p: => Process[F,O]): Process[F,O] =
+  def Try[F[_],O](p: => StreamProcess[F,O]): StreamProcess[F,O] =
     try p
     catch { case e: Throwable => Halt(e) }
 
@@ -162,17 +162,28 @@ object Helper {
 
   /** PROCESS */
   def emit[F[_],O](head: O,
-                   tail: Process[F,O] = Halt[F,O](End)): Process[F,O] =
+                   tail: StreamProcess[F,O] = Halt[F,O](End)): StreamProcess[F,O] =
     Emit(head, tail)
 
-  def await[F[_],A,O](req: F[A])(recv: Either[Throwable,A] => Process[F,O]): Process[F,O] =
+  def await[F[_],A,O](req: F[A])(recv: Either[Throwable,A] => StreamProcess[F,O]): StreamProcess[F,O] =
     Await(req, recv)
 
-  def eval[F[_],A](a: F[A]): Process[F,A] =
+  def eval[F[_],A](a: F[A]): StreamProcess[F,A] =
     await(a) {
       case Left(err) => Halt(err)
       case Right(value) => Emit[F,A](value, Halt(End))
     }
+
+  /*
+ * Generic combinator for producing a `Process[IO,O]` from some
+ * effectful `O` source. The source is tied to some resource,
+ * `R` (like a file handle) that we want to ensure is released.
+ * See `lines` below for an example use.
+ */
+  def resource[F[_],R,O](acquire: F[R])
+                        (use: R => StreamProcess[F,O])
+                        (release: R => StreamProcess[F,O]): StreamProcess[F,O] =
+    eval(acquire) flatMap { r => use(r).onComplete(release(r)) }
 
 
   /** PROCESS1 */

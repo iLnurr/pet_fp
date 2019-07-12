@@ -1,13 +1,13 @@
 package com.iserba.fp
 
 import com.iserba.fp.utils.Monad.MonadCatch
-import utils.Par
+import com.iserba.fp.utils.Par
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 object impl {
 
-  case class ParFuture(implicit E: ExecutionContext) extends Par[Future] {
+  def parFuture(implicit ec: ExecutionContext): Par[Future] = new Par[Future] {
     def unit[A](a: => A): Future[A] =
       Future.successful(a)
     def delay[A](a: => A): Future[A] =
@@ -25,7 +25,7 @@ object impl {
     }
     def asyncF[A, B](f: A => B): A => Future[B] = a =>
       lazyUnit(f(a))
-    def async[A](f: (Either[Throwable,A] => Unit) => Unit): Future[A] = {
+    def asyncTask[A](f: (Either[Throwable,A] => Unit) => Unit): Future[A] = {
       val p = Promise[A]()
       f.apply{
         case Right(a) => p.success(a)

@@ -9,7 +9,7 @@ trait Par[F[_]] extends MonadCatch[F] {
   def fork[A](a: => F[A]): F[A]
   def async[A](f: (A => Unit) => Unit): F[A]
   def asyncF[A,B](f: A => B): A => F[B]
-  def async[A](f: (Either[Throwable,A] => Unit) => Unit): F[A]
+  def asyncTask[A](f: (Either[Throwable,A] => Unit) => Unit): F[A]
   /**
     * Helper function, for evaluating an action
     * asynchronously.
