@@ -2,13 +2,20 @@ package com.iserba.fp.utils
 
 import com.iserba.fp.utils.Monad.MonadCatch
 import com.iserba.fp.utils.StreamProcess._
-import Helper._
+import StreamProcessHelper._
+import com.iserba.fp.IO
 
 import language.implicitConversions
 import language.higherKinds
 import language.postfixOps
 
 trait StreamProcess[F[_],O] {
+  def map[O2](f: O => O2): StreamProcess[F,O2] = this match {
+    case Await(req,recv) =>
+      Await(req, recv andThen (_ map f))
+    case Emit(h, t) => Try { Emit(f(h), t map f) }
+    case Halt(err) => Halt(err)
+  }
   def ++(p: => StreamProcess[F,O]): StreamProcess[F,O] = this.onHalt {
     case End => Try(p)
     case err => Halt(err)
@@ -112,7 +119,7 @@ trait StreamProcess[F[_],O] {
     this ++ this.repeat
 
   def zipWith[O2,O3](p2: StreamProcess[F,O2])(f: (O,O2) => O3): StreamProcess[F,O3] =
-    (this tee p2)(Helper.zipWith(f))
+    (this tee p2)(StreamProcessHelper.zipWith(f))
 
   def zip[O2](p2: StreamProcess[F,O2]): StreamProcess[F,(O,O2)] =
     zipWith(p2)((_,_))
@@ -150,7 +157,7 @@ object StreamProcess {
   type Channel[F[_],I,O] = StreamProcess[F, I => StreamProcess[F,O]]
 }
 
-object Helper {
+object StreamProcessHelper {
   def Try[F[_],O](p: => StreamProcess[F,O]): StreamProcess[F,O] =
     try p
     catch { case e: Throwable => Halt(e) }
@@ -174,6 +181,14 @@ object Helper {
       case Right(value) => Emit[F,A](value, Halt(End))
     }
 
+  /* Evaluate the action purely for its effects. */
+  def eval_[F[_],A,B](a: F[A]): StreamProcess[F,B] =
+    eval[F,A](a).drain[B]
+
+  /* The infinite, constant stream. */
+  def constant[A](a: A): StreamProcess[IO,A] =
+    eval(IO(a)).flatMap { a => Emit(a, constant(a)) }
+
   /*
  * Generic combinator for producing a `Process[IO,O]` from some
  * effectful `O` source. The source is tied to some resource,
@@ -184,6 +199,14 @@ object Helper {
                         (use: R => StreamProcess[F,O])
                         (release: R => StreamProcess[F,O]): StreamProcess[F,O] =
     eval(acquire) flatMap { r => use(r).onComplete(release(r)) }
+
+  /*
+     * Like `resource`, but `release` is a single `IO` action.
+     */
+  def resource_[R,O](acquire: IO[R])(
+    use: R => StreamProcess[IO,O])(
+                      release: R => IO[Unit]): StreamProcess[IO,O] =
+    resource(acquire)(use)(release andThen (eval_[IO,Unit,O]))
 
 
   /** PROCESS1 */

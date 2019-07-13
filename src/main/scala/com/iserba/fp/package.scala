@@ -1,6 +1,7 @@
 package com.iserba
 
 import com.iserba.fp.utils.Free.Suspend
+import com.iserba.fp.utils.Monad.MonadCatch
 import com.iserba.fp.utils.{Free, Monad, Par}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -12,6 +13,20 @@ package object fp {
   type IO[A] = Free[ParF,A]
 
   implicit val ioMonad: Monad[({type f[a] = Free[ParF, a]})#f] = Free.freeMonad[ParF]
+  implicit val ioMC: MonadCatch[({type f[a] = Free[ParF, a]})#f] = new MonadCatch[({type f[a] = Free[ParF, a]})#f] {
+    def attempt[A](a: Free[ParF, A]): Free[ParF, Either[Throwable, A]] = {
+      val r = Free.run(a) map {a =>
+        Right(a)
+      } recover {case thr => Left(thr)}
+      par(r)
+    }
+    def fail[A](t: Throwable): Free[ParF, A] =
+      par(Future.failed[A](t))
+    override def unit[A](a: => A): Free[ParF, A] =
+      ioMonad.unit(a)
+    override def flatMap[A, B](a: Free[ParF, A])(f: A => Free[ParF, B]): Free[ParF, B] =
+      ioMonad.flatMap(a)(f)
+  }
   implicit val parFuture: Par[ParF] = impl.parFuture
 
   def IO[A](a: => A): IO[A] =
