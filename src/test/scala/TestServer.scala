@@ -1,6 +1,6 @@
 package test
 
-import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
+import java.util.concurrent.atomic.AtomicLong
 
 import com.iserba.fp._
 import com.iserba.fp.algebra._
@@ -12,7 +12,8 @@ import test.TestImpl._
 import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
-  testStreamProcess.map(println).runLog
+  val server = new ServerImpl
+  server.run().map(r => println(s"Server response $r")).runLog
 }
 object TestImpl {
   case class RequestImpl[A](entity: Option[A]) extends Request[Option, A]
@@ -29,7 +30,7 @@ object TestImpl {
   def eventsIO = IO(eventsF)
 
   def testRequest: Req =
-    RequestImpl(None)
+    RequestImpl(Some(eventGen))
 
   def testStreamProcess: StreamProcess[IO, Event] =
     resource(eventsIO){ eventsStream =>
@@ -43,4 +44,24 @@ object TestImpl {
     }{ _ =>
       eval_(IO(()))
     }
+
+  class ConnectionImpl extends Connection {
+    private var underlying = List[Req](testRequest)
+    def requests: List[Req] =
+      get
+    def get: List[Req] =
+      underlying
+    def add(req: Req): Unit = {
+      val nl = req :: underlying
+      underlying = nl
+    }
+  }
+  val connection = new ConnectionImpl
+
+  class ServerImpl extends Server[IO] {
+    def conn: IO[Connection] =
+      IO(connection)
+    def convert: Req => Resp = req =>
+      ResponseImpl(req.entity.map(_.copy(model = "updated model")))
+  }
 }

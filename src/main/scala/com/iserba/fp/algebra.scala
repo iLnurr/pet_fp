@@ -1,7 +1,10 @@
 package com.iserba.fp
 
+import com.iserba.fp.utils.StreamProcess.{Channel, Emit, Halt}
+
 import scala.language.{higherKinds, implicitConversions}
 import utils.StreamProcess
+import com.iserba.fp.utils.StreamProcessHelper._
 
 object algebra {
   trait Tpe
@@ -22,14 +25,32 @@ object algebra {
 
   type Req = Request[Option, Event]
   type Resp = Response[Option, Event]
-  trait Connection
+  trait Connection {
+    def requests: List[Req]
+    def close: Unit = {
+      println(s"Close connection")
+    }
+  }
 
   trait Server[F[_]] {
+    def conn: F[Connection]
     def convert: Req => Resp
-    def run(conn: Connection): StreamProcess[F,Resp]
+    def run(): StreamProcess[F,Resp] =
+      eval(conn).flatMap {c =>
+        val requests: StreamProcess[F, Resp] = c.requests match {
+          case Nil =>
+            Halt[F,Resp](End)
+          case reqs =>
+            val req = reqs.head
+            println(s"Server got req ${req}")
+            Emit[F,Resp](convert(req), Halt(End))
+        }
+        requests
+      }
+
   }
 
   trait Client[F[_]] {
-    def call(request: Req, connection: Connection): StreamProcess[F,Resp]
+    def call(request: Req): StreamProcess[F,Resp]
   }
 }
