@@ -12,6 +12,7 @@ import test.TestImpl._
 import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
+  testStreamProcess.map(println).runLog
 }
 object TestImpl {
   case class RequestImpl[A](entity: Option[A]) extends Request[Option, A]
@@ -24,15 +25,11 @@ object TestImpl {
   def testModel(id: Long = idAccumulator.getAndIncrement()) = s"{id = $id}"
   def eventGen: Event = new Event(tpe = StringTpe, metadata = TestMeta(200), ts = ts, model = testModel())
 
-  def eventsF = LazyList.continually(eventGen)
+  def eventsF = List(eventGen)
   def eventsIO = IO(eventsF)
 
   def testRequest: Req =
     RequestImpl(None)
-
-  /* simple communication protocol */
-  val protocol = new AtomicReference[Seq[(Req,Option[Resp])]](Seq.empty[(Req,Option[Resp])])
-  /* simple communication protocol */
 
   def testStreamProcess: StreamProcess[IO, Event] =
     resource(eventsIO){ eventsStream =>

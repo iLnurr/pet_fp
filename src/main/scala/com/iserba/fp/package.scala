@@ -1,11 +1,12 @@
 package com.iserba
 
-import com.iserba.fp.utils.Free.Suspend
+import com.iserba.fp.utils.Free.{FlatMap, Suspend}
 import com.iserba.fp.utils.Monad.MonadCatch
 import com.iserba.fp.utils.{Free, Monad, Par}
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 import scala.language.higherKinds
 
 package object fp {
@@ -23,9 +24,10 @@ package object fp {
     def fail[A](t: Throwable): Free[ParF, A] =
       par(Future.failed[A](t))
     override def unit[A](a: => A): Free[ParF, A] =
-      ioMonad.unit(a)
-    override def flatMap[A, B](a: Free[ParF, A])(f: A => Free[ParF, B]): Free[ParF, B] =
-      ioMonad.flatMap(a)(f)
+      Return(a)
+    override def flatMap[A, B](a: Free[ParF, A])(f: A => Free[ParF, B]): Free[ParF, B] = {
+      f(Await.result(Free.run(a), 5.seconds))
+    }
   }
   implicit val parFuture: Par[ParF] = impl.parFuture
 

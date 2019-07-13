@@ -198,7 +198,12 @@ object StreamProcessHelper {
   def resource[F[_],R,O](acquire: F[R])
                         (use: R => StreamProcess[F,O])
                         (release: R => StreamProcess[F,O]): StreamProcess[F,O] =
-    eval(acquire) flatMap { r => use(r).onComplete(release(r)) }
+    eval(
+      acquire
+    ) flatMap { r =>
+      use(r)
+        .onComplete(release(r))
+    }
 
   /*
      * Like `resource`, but `release` is a single `IO` action.
