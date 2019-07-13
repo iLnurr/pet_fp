@@ -1,10 +1,13 @@
 package com.iserba.fp
 
-import com.iserba.fp.utils.StreamProcess.{Channel, Emit, Halt}
+import com.iserba.fp.utils.Monad.MonadCatch
+import com.iserba.fp.utils.StreamProcess.{Await, Channel, Emit, Halt}
 
 import scala.language.{higherKinds, implicitConversions}
-import utils.StreamProcess
+import utils.{Free, StreamProcess}
 import com.iserba.fp.utils.StreamProcessHelper._
+
+import scala.annotation.tailrec
 
 object algebra {
   trait Tpe
@@ -26,26 +29,30 @@ object algebra {
   type Req = Request[Option, Event]
   type Resp = Response[Option, Event]
   trait Connection {
-    def requests: List[Req]
+    def request: Option[Req]
     def close: Unit = {
       println(s"Close connection")
     }
   }
 
   trait Server[F[_]] {
-    def conn: F[Connection]
+    def conn: IO[Connection]
     def convert: Req => Resp
-    def run(): StreamProcess[F,Resp] =
-      eval(conn).flatMap {c =>
-        val requests: StreamProcess[F, Resp] = c.requests match {
-          case Nil =>
-            Halt[F,Resp](End)
-          case reqs =>
-            val req = reqs.head
+    def run(): StreamProcess[IO,Resp] =
+      runOnce()
+    def runOnce(): StreamProcess[IO,Resp] =
+      resource_(conn){c =>
+        def step = c.request
+        def requests: StreamProcess[IO, Resp] = eval(IO(step)).flatMap {
+          case None =>
+            Halt(End)
+          case Some(req) =>
             println(s"Server got req ${req}")
-            Emit[F,Resp](convert(req), Halt(End))
+            Emit(convert(req), requests)
         }
         requests
+      }{
+        c => IO(())
       }
 
   }

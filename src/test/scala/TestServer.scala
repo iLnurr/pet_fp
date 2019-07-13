@@ -4,16 +4,20 @@ import java.util.concurrent.atomic.AtomicLong
 
 import com.iserba.fp._
 import com.iserba.fp.algebra._
-import com.iserba.fp.utils.StreamProcess
-import com.iserba.fp.utils.StreamProcess.{Emit, Halt}
-import com.iserba.fp.utils.StreamProcessHelper._
 import test.TestImpl._
 
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
   val server = new ServerImpl
-  server.run().map(r => println(s"Server response $r")).runLog
+  def runServer = server.run().map(r => println(s"Server response $r")).runLog
+  connection.add(testRequest)
+  runServer
+  connection.add(testRequest)
+
+
 }
 object TestImpl {
   case class RequestImpl[A](entity: Option[A]) extends Request[Option, A]
@@ -32,25 +36,16 @@ object TestImpl {
   def testRequest: Req =
     RequestImpl(Some(eventGen))
 
-  def testStreamProcess: StreamProcess[IO, Event] =
-    resource(eventsIO){ eventsStream =>
-      lazy val iter = eventsStream.iterator
-      def step = if (iter.hasNext) Some(iter.next) else None
-      lazy val events: StreamProcess[IO, Event] = eval(IO(step)).flatMap {
-        case None => Halt(End)
-        case Some(evs) => Emit(evs, events)
-      }
-      events
-    }{ _ =>
-      eval_(IO(()))
-    }
-
   class ConnectionImpl extends Connection {
-    private var underlying = List[Req](testRequest)
-    def requests: List[Req] =
-      get
-    def get: List[Req] =
-      underlying
+    private var underlying = List[Req]()
+    def request = {
+      get.map { r =>
+        underlying = if (underlying.isEmpty) Nil else underlying.tail
+        r
+      }
+    }
+    def get: Option[Req] =
+      underlying.headOption
     def add(req: Req): Unit = {
       val nl = req :: underlying
       underlying = nl
