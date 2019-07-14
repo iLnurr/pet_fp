@@ -6,17 +6,28 @@ import com.iserba.fp._
 import com.iserba.fp.algebra._
 import test.TestImpl._
 
-import scala.concurrent.Future
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
-  val server = new ServerImpl
-  def runServer = server.run().map(r => println(s"Server response $r")).runLog
-  connection.add(testRequest)
+  def runServer = Future {
+    val server = new ServerImpl
+    server.run().runLog
+  }
+  val client = Future(new ClientImpl)
+  def makeReq = {
+    client.map(_.call(testRequest).runLog)
+  }
   runServer
-  connection.add(testRequest)
+  makeReq
 
+  Thread.sleep(10000)
+  makeReq
+  makeReq
+  makeReq
+  Thread.sleep(10000)
 
 }
 object TestImpl {
@@ -37,18 +48,31 @@ object TestImpl {
     RequestImpl(Some(eventGen))
 
   class ConnectionImpl extends Connection {
-    private var underlying = List[Req]()
-    def request = {
-      get.map { r =>
-        underlying = if (underlying.isEmpty) Nil else underlying.tail
+    private var requests = List[Req]()
+    private val responses = mutable.Map[Req,Resp]()
+
+    def getRequest = {
+      Thread.sleep(1000)
+      requests.headOption.map { r =>
+        requests = if (requests.isEmpty) Nil else requests.tail
         r
       }
     }
-    def get: Option[Req] =
-      underlying.headOption
-    def add(req: Req): Unit = {
-      val nl = req :: underlying
-      underlying = nl
+    def sendRequest(req: Req): Resp = {
+      def tryToGet(req: Req): Resp = {
+        responses.getOrElse(req, {
+          Thread.sleep(1000)
+          tryToGet(req)
+        })
+      }
+      val nl = req :: requests
+      requests = nl
+      tryToGet(req)
+    }
+
+    def addResponse(resp: Resp, req: Req): Resp = {
+      responses.addOne(req,resp)
+      resp
     }
   }
   val connection = new ConnectionImpl
@@ -57,6 +81,13 @@ object TestImpl {
     def conn: IO[Connection] =
       IO(connection)
     def convert: Req => Resp = req =>
-      ResponseImpl(req.entity.map(_.copy(model = "updated model")))
+      ResponseImpl(req.entity.map{ event =>
+        val old = event.model
+        event.copy(model = old + " updated model")
+      })
+  }
+  class ClientImpl extends Client[IO] {
+    def conn: IO[Connection] =
+      IO(connection)
   }
 }

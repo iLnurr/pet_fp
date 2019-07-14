@@ -1,13 +1,10 @@
 package com.iserba.fp
 
-import com.iserba.fp.utils.Monad.MonadCatch
-import com.iserba.fp.utils.StreamProcess.{Await, Channel, Emit, Halt}
-
-import scala.language.{higherKinds, implicitConversions}
-import utils.{Free, StreamProcess}
+import com.iserba.fp.utils.StreamProcess
+import com.iserba.fp.utils.StreamProcess.Emit
 import com.iserba.fp.utils.StreamProcessHelper._
 
-import scala.annotation.tailrec
+import scala.language.{higherKinds, implicitConversions}
 
 object algebra {
   trait Tpe
@@ -29,7 +26,9 @@ object algebra {
   type Req = Request[Option, Event]
   type Resp = Response[Option, Event]
   trait Connection {
-    def request: Option[Req]
+    def getRequest: Option[Req]
+    def addResponse(resp: Resp, req: Req): Resp
+    def sendRequest(r: Req): Resp
     def close: Unit = {
       println(s"Close connection")
     }
@@ -39,16 +38,18 @@ object algebra {
     def conn: IO[Connection]
     def convert: Req => Resp
     def run(): StreamProcess[IO,Resp] =
-      runOnce()
-    def runOnce(): StreamProcess[IO,Resp] =
       resource_(conn){c =>
-        def step = c.request
+        def step = c.getRequest
         def requests: StreamProcess[IO, Resp] = eval(IO(step)).flatMap {
           case None =>
-            Halt(End)
+            println(s"Server wait for requests")
+            run()
           case Some(req) =>
-            println(s"Server got req ${req}")
-            Emit(convert(req), requests)
+            println(s"Server got request ${req}")
+            val resp = convert(req)
+            println(s"Server response ${req}")
+            c.addResponse(resp,req)
+            Emit(resp, requests)
         }
         requests
       }{
@@ -58,6 +59,17 @@ object algebra {
   }
 
   trait Client[F[_]] {
-    def call(request: Req): StreamProcess[F,Resp]
+    def conn: IO[Connection]
+    def call(request: Req): StreamProcess[IO,Resp] =
+      resource(conn){c =>
+        eval(IO{
+          println(s"Client send request $request")
+          val resp = c.sendRequest(request)
+          println(s"Client got response $resp")
+          resp
+        })
+      }{
+        c => eval_(IO(c.close))
+      }
   }
 }

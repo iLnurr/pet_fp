@@ -11,7 +11,7 @@ object impl {
     def unit[A](a: => A): Future[A] =
       Future.successful(a)
     def delay[A](a: => A): Future[A] =
-      Future.successful(a)
+      lazyUnit(a)
     def fork[A](a: => Future[A]): Future[A] =
       a.flatMap(eval(_))
     def lazyUnit[A](a: => A): Future[A] =
