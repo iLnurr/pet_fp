@@ -11,10 +11,10 @@ object algebra {
   trait Metadata {
     def status: Int
   }
-  sealed trait Model {
+  trait Model {
     def id: Option[Long]
   }
-  case class Event(tpe: Tpe, ts: Long, metadata: Metadata, model: String)
+  case class Event(tpe: Tpe, ts: Long, metadata: Metadata, model: Model)
 
   trait Request[F[_],A] {
     def entity: F[A]
@@ -28,7 +28,7 @@ object algebra {
   trait Connection {
     def getRequest: Option[Req]
     def addResponse(resp: Resp, req: Req): Resp
-    def sendRequest(r: Req): Resp
+    def makeRequest(r: Req): Resp
     def close: Unit = {
       println(s"Close connection")
     }
@@ -45,15 +45,15 @@ object algebra {
             println(s"Server wait for requests")
             run()
           case Some(req) =>
-            println(s"Server got request ${req}")
+            println(s"Server got request $req")
             val resp = convert(req)
-            println(s"Server response ${req}")
+            println(s"Server response $resp")
             c.addResponse(resp,req)
             Emit(resp, requests)
         }
         requests
       }{
-        c => IO(())
+        c => IO(c.close)
       }
 
   }
@@ -64,12 +64,12 @@ object algebra {
       resource(conn){c =>
         eval(IO{
           println(s"Client send request $request")
-          val resp = c.sendRequest(request)
+          val resp = c.makeRequest(request)
           println(s"Client got response $resp")
           resp
         })
       }{
-        c => eval_(IO(c.close))
+        _ => eval_(IO(println(s"Call end")))
       }
   }
 }

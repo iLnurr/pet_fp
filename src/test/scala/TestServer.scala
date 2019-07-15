@@ -8,26 +8,33 @@ import test.TestImpl._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
+  val testConnection: IO[Connection] = IO(new TestConnection)
   def runServer = Future {
-    val server = new ServerImpl
-    server.run().runLog
+    ServerImpl(testConnection).run().runLog
   }
-  val client = Future(new ClientImpl)
-  def makeReq = {
+  val client1 = Future(ClientImpl(testConnection))
+  val client2 = Future(ClientImpl(testConnection))
+  def makeReq(client: Future[ClientImpl]) = {
     client.map(_.call(testRequest).runLog)
   }
-  runServer
-  makeReq
+  val serverRun = runServer
+  val req1 = makeReq(client1)
+  val req2 = makeReq(client2)
+  val req3 = makeReq(client1)
+  val req4 = makeReq(client2)
 
-  Thread.sleep(10000)
-  makeReq
-  makeReq
-  makeReq
-  Thread.sleep(10000)
+  Await.result(for {
+    _ <- serverRun
+    _ <- req1
+    _ <- req2
+    _ <- req3
+    _ <- req4
+  } yield {}, Duration.Inf)
 
 }
 object TestImpl {
@@ -35,11 +42,13 @@ object TestImpl {
   case class ResponseImpl[A](body: Option[A]) extends Response[Option, A]
 
   case object StringTpe extends Tpe
+  case object TestModelTpe extends Tpe
   case class TestMeta(status: Int) extends Metadata
+  case class TestModel(id: Option[Long], info: String) extends Model
   def ts = System.currentTimeMillis()
   val idAccumulator = new AtomicLong(0L)
-  def testModel(id: Long = idAccumulator.getAndIncrement()) = s"{id = $id}"
-  def eventGen: Event = new Event(tpe = StringTpe, metadata = TestMeta(200), ts = ts, model = testModel())
+  def testModel(id: Long = idAccumulator.getAndIncrement()): Model = TestModel(Some(id), "")
+  def eventGen: Event = new Event(tpe = TestModelTpe, metadata = TestMeta(200), ts = ts, model = testModel())
 
   def eventsF = List(eventGen)
   def eventsIO = IO(eventsF)
@@ -47,7 +56,7 @@ object TestImpl {
   def testRequest: Req =
     RequestImpl(Some(eventGen))
 
-  class ConnectionImpl extends Connection {
+  class TestConnection extends Connection {
     private var requests = List[Req]()
     private val responses = mutable.Map[Req,Resp]()
 
@@ -58,7 +67,7 @@ object TestImpl {
         r
       }
     }
-    def sendRequest(req: Req): Resp = {
+    def makeRequest(req: Req): Resp = {
       def tryToGet(req: Req): Resp = {
         responses.getOrElse(req, {
           Thread.sleep(1000)
@@ -75,19 +84,12 @@ object TestImpl {
       resp
     }
   }
-  val connection = new ConnectionImpl
 
-  class ServerImpl extends Server[IO] {
-    def conn: IO[Connection] =
-      IO(connection)
+  case class ServerImpl(conn: IO[Connection]) extends Server[IO] {
     def convert: Req => Resp = req =>
       ResponseImpl(req.entity.map{ event =>
-        val old = event.model
-        event.copy(model = old + " updated model")
+        event.copy(model = TestModel(event.model.id, "updated model"))
       })
   }
-  class ClientImpl extends Client[IO] {
-    def conn: IO[Connection] =
-      IO(connection)
-  }
+  case class ClientImpl(conn: IO[Connection]) extends Client[IO]
 }
