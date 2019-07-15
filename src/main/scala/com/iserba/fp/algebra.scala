@@ -1,6 +1,6 @@
 package com.iserba.fp
 
-import com.iserba.fp.utils.StreamProcess
+import com.iserba.fp.utils.{Monad, StreamProcess}
 import com.iserba.fp.utils.StreamProcess.Emit
 import com.iserba.fp.utils.StreamProcessHelper._
 
@@ -29,18 +29,18 @@ object algebra {
     def getRequest: Option[Req]
     def addResponse(resp: Resp, req: Req): Resp
     def makeRequest(r: Req): Resp
-    def close: Unit = {
+    def close(): Unit = {
       println(s"Close connection")
     }
   }
 
   trait Server[F[_]] {
-    def conn: IO[Connection]
+    def conn: F[Connection]
     def convert: Req => Resp
-    def run(): StreamProcess[IO,Resp] =
-      resource_(conn){c =>
+    def run()(implicit F: Monad[F]): StreamProcess[F,Resp] =
+      resource(conn){c =>
         def step = c.getRequest
-        def requests: StreamProcess[IO, Resp] = eval(IO(step)).flatMap {
+        def requests: StreamProcess[F, Resp] = eval(F.unit(step)).flatMap {
           case None =>
             println(s"Server wait for requests")
             run()
@@ -53,23 +53,23 @@ object algebra {
         }
         requests
       }{
-        c => IO(c.close)
+        c => eval_(F.unit(c.close()))
       }
 
   }
 
   trait Client[F[_]] {
-    def conn: IO[Connection]
-    def call(request: Req): StreamProcess[IO,Resp] =
+    def conn: F[Connection]
+    def call(request: Req)(implicit F: Monad[F]): StreamProcess[F,Resp] =
       resource(conn){c =>
-        eval(IO{
+        eval(F.unit{
           println(s"Client send request $request")
           val resp = c.makeRequest(request)
           println(s"Client got response $resp")
           resp
         })
       }{
-        _ => eval_(IO(println(s"Call end")))
+        _ => eval_(F.unit(println(s"Call end")))
       }
   }
 }
