@@ -7,14 +7,10 @@ import com.iserba.fp.utils.StreamProcessHelper._
 import scala.language.{higherKinds, implicitConversions}
 
 object algebra {
-  trait Tpe
-  trait Metadata {
-    def status: Int
-  }
   trait Model {
     def id: Option[Long]
   }
-  case class Event(tpe: Tpe, ts: Long, metadata: Metadata, model: Model)
+  case class Event(ts: Long, model: Model)
 
   trait Request[F[_],A] {
     def entity: F[A]

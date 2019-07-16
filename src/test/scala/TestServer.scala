@@ -40,21 +40,15 @@ object Test extends App {
 object TestImpl {
   case class RequestImpl[A](entity: Option[A]) extends Request[Option, A]
   case class ResponseImpl[A](body: Option[A]) extends Response[Option, A]
-
-  case object StringTpe extends Tpe
-  case object TestModelTpe extends Tpe
-  case class TestMeta(status: Int) extends Metadata
   case class TestModel(id: Option[Long], info: String) extends Model
-  def ts = System.currentTimeMillis()
-  val idAccumulator = new AtomicLong(0L)
-  def testModel(id: Long = idAccumulator.getAndIncrement()): Model = TestModel(Some(id), "")
-  def eventGen: Event = new Event(tpe = TestModelTpe, metadata = TestMeta(200), ts = ts, model = testModel())
 
+  def ts = System.currentTimeMillis()
+  private val idAccumulator = new AtomicLong(0L)
+  def testModel(id: Long = idAccumulator.getAndIncrement()): Model = TestModel(Some(id), "")
+  def eventGen: Event = Event(ts = ts, model = testModel())
   def eventsF = List(eventGen)
   def eventsIO = IO(eventsF)
-
-  def testRequest: Req =
-    RequestImpl(Some(eventGen))
+  def testRequest: Req = RequestImpl(Some(eventGen))
 
   class TestConnection extends Connection {
     private var requests = List[Req]()
