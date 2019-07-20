@@ -34,6 +34,8 @@ object TestStreamProcess extends App {
     eval(IO(l))
 
 
-  Free.run(resource(acquire){l => use(l)}{l => release(l)}.runLog)
+  Free.run( // end of ev
+    resource(acquire){l => use(l)}{l => release(l)}.runLog // IO streams
+  )
 
 }
