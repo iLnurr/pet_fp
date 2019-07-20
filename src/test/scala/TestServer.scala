@@ -22,23 +22,29 @@ object Test extends App {
   val client1 = new Client[F]{}
   val client2 = new Client[F]{}
 
-  val serverRunParF =
+  val serverProgram =
     server
       .run(testConnection)
       .runStreamProcess
       .runFree
 
-  val requestsParF =
-    (client1.call(testRequest, testConnection) ++ client2.call(testRequest, testConnection))
+  val client1Program =
+    client1.call(testRequest, testConnection)
       .runStreamProcess
       .runFree
 
-  val program = for {
-    _ <- serverRunParF
-    _ <- requestsParF
+  val client2Program =
+    client2.call(testRequest, testConnection)
+      .runStreamProcess
+      .runFree
+
+  val main = for {
+    _ <- serverProgram
+    _ <- client1Program
+    _ <- client2Program
   } yield ()
 
-  Await.result(program, Duration.Inf)
+  Await.result(main, Duration.Inf)
 
 }
 
