@@ -14,19 +14,20 @@ import scala.concurrent.duration._
 import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
+  import parFIO._
   val testConnection: IO[Connection] = parFIO.now(new TestConnection)
-  def runServer: StreamProcess[ParF, Resp] = {
-    new Server[ParF] {
+  def runServer: StreamProcess[IO, Resp] = {
+    new Server[IO] {
       override def convert: Req => Resp = TestImpl.convert
-    }.run(Free.run(testConnection))
+    }.run(testConnection)
   }
-  val client1 = new Client[ParF]{}
-  val client2 = new Client[ParF]{}
-  def makeReq(client: Client[ParF]): StreamProcess[ParF, Resp] = {
-    client.call(testRequest, Free.run(testConnection))
+  val client1 = new Client[IO]{}
+  val client2 = new Client[IO]{}
+  def makeReq(client: Client[IO]): StreamProcess[IO, Resp] = {
+    client.call(testRequest, testConnection)
   }
-  val serverRun = runServer.runStreamProcess
-  val reqs = (makeReq(client1) ++ makeReq(client2)).runStreamProcess
+  val serverRun = runServer.runStreamProcess.run
+  val reqs = (makeReq(client1) ++ makeReq(client2)).runStreamProcess.run
 
   Await.result(for {
     _ <- serverRun
