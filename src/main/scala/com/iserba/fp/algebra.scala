@@ -31,15 +31,14 @@ object algebra {
   }
 
   trait Server[F[_]] {
-    def conn: F[Connection]
     def convert: Req => Resp
-    def run()(implicit F: Monad[F]): StreamProcess[F,Resp] =
+    def run(conn: F[Connection])(implicit F: Monad[F]): StreamProcess[F,Resp] =
       resource(conn){c =>
         def step = c.getRequest
         def requests: StreamProcess[F, Resp] = eval(F.unit(step)).flatMap {
           case None =>
             println(s"Server wait for requests")
-            run()
+            run(conn)
           case Some(req) =>
             println(s"Server got request $req")
             val resp = convert(req)
@@ -55,8 +54,7 @@ object algebra {
   }
 
   trait Client[F[_]] {
-    def conn: F[Connection]
-    def call(request: Req)(implicit F: Monad[F]): StreamProcess[F,Resp] =
+    def call(request: Req, conn: F[Connection])(implicit F: Monad[F]): StreamProcess[F,Resp] =
       resource(conn){c =>
         eval(F.unit{
           println(s"Client send request $request")
@@ -65,7 +63,7 @@ object algebra {
           resp
         })
       }{
-        _ => eval_(F.unit(println(s"Call end")))
+        _ => eval_(F.unit(println(s"Client call ended")))
       }
   }
 }

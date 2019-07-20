@@ -19,9 +19,9 @@ object TestStreamProcess extends App {
     override def flatMap[A, B](a: Option[A])(f: A => Option[B]): Option[B] = a.flatMap(f)
   }
 
-  eval(Option(Random.nextLong())).map(l => println(s"First $l")).runLog
+  eval(Option(Random.nextLong())).map(l => println(s"First $l")).runStreamProcess
 
-  eval(run(IO(Option(Random.nextLong())))).map(l => println(s"Second $l")).runLog
+  eval(run(IO(Option(Random.nextLong())))).map(l => println(s"Second $l")).runStreamProcess
 
   def acquire: IO[Option[Long]] =
     IO(Option(Random.nextLong()))
@@ -35,7 +35,7 @@ object TestStreamProcess extends App {
 
 
   Free.run( // end of ev
-    resource(acquire){l => use(l)}{l => release(l)}.runLog // IO streams
+    resource(acquire){l => use(l)}{l => release(l)}.runStreamProcess // IO streams
   )
 
 }

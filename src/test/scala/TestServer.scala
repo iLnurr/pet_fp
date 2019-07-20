@@ -18,20 +18,15 @@ object Test extends App {
   def runServer: StreamProcess[ParF, Resp] = {
     new Server[ParF] {
       override def convert: Req => Resp = TestImpl.convert
-      override def conn: ParF[Connection] = Free.run(testConnection)
-    }.run()
+    }.run(Free.run(testConnection))
   }
-  val client1 = new Client[ParF] {
-    override def conn: ParF[Connection] = Free.run(testConnection)
-  }
-  val client2 = new Client[ParF] {
-    override def conn: ParF[Connection] = Free.run(testConnection)
-  }
+  val client1 = new Client[ParF]{}
+  val client2 = new Client[ParF]{}
   def makeReq(client: Client[ParF]): StreamProcess[ParF, Resp] = {
-    client.call(testRequest)
+    client.call(testRequest, Free.run(testConnection))
   }
-  val serverRun = runServer.runLog
-  val reqs = (makeReq(client1) ++ makeReq(client2)).runLog
+  val serverRun = runServer.runStreamProcess
+  val reqs = (makeReq(client1) ++ makeReq(client2)).runStreamProcess
 
   Await.result(for {
     _ <- serverRun

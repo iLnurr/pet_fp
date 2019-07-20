@@ -54,7 +54,7 @@ trait StreamProcess[F[_],O] {
     case Await(req,recv) => Await(req, recv andThen (_.onHalt(f)))
   }
 
-  def runLog(implicit F: MonadCatch[F]): F[IndexedSeq[O]] = {
+  def runStreamProcess(implicit F: MonadCatch[F]): F[IndexedSeq[O]] = {
     def go(cur: StreamProcess[F,O], acc: IndexedSeq[O]): F[IndexedSeq[O]] =
       cur match {
         case Emit(h,t) => go(t, acc :+ h)

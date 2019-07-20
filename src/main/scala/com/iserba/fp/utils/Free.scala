@@ -3,13 +3,15 @@ package com.iserba.fp.utils
 import scala.language.{higherKinds, implicitConversions}
 import Free._
 
-sealed trait Free[F[_],A] {
+sealed trait Free[F[_],A] { self =>
   def unit(a: => A): Free[F,A] =
     Return[F,A](a)
   def flatMap[B](f: A => Free[F,B]): Free[F,B] =
     FlatMap(this, f)
   def map[B](f: A => B): Free[F,B] =
     flatMap(f andThen (Return(_)))
+  def run(implicit F: Monad[F]): F[A] =
+    Free.run(self)
 }
 object Free {
   case class Return[F[_],A](a: A) extends Free[F, A]
