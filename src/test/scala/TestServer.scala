@@ -4,23 +4,31 @@ import java.util.concurrent.atomic.AtomicLong
 
 import com.iserba.fp._
 import com.iserba.fp.algebra._
+import com.iserba.fp.utils.Free
 import test.TestImpl._
 
 import scala.collection.mutable
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
-  val testConnection: IO[Connection] = IO(new TestConnection)
-  def runServer = Future {
-    ServerImpl(testConnection).run().runLog
+  val testConnection: IO[Connection] = parFIO.now(new TestConnection)
+  def runServer: ParF[IndexedSeq[Resp]] = {
+    new Server[ParF] {
+      override def convert: Req => Resp = TestImpl.convert
+      override def conn: ParF[Connection] = Free.run(testConnection)
+    }.run().runLog
   }
-  val client1 = Future(ClientImpl(testConnection))
-  val client2 = Future(ClientImpl(testConnection))
-  def makeReq(client: Future[ClientImpl]) = {
-    client.map(_.call(testRequest).runLog)
+  val client1 = new Client[ParF] {
+    override def conn: ParF[Connection] = Free.run(testConnection)
+  }
+  val client2 = new Client[ParF] {
+    override def conn: ParF[Connection] = Free.run(testConnection)
+  }
+  def makeReq(client: Client[ParF]): ParF[IndexedSeq[Resp]] = {
+    client.call(testRequest).runLog
   }
   val serverRun = runServer
   val req1 = makeReq(client1)
@@ -37,6 +45,7 @@ object Test extends App {
   } yield {}, Duration.Inf)
 
 }
+
 object TestImpl {
   case class RequestImpl[A](entity: Option[A]) extends Request[Option, A]
   case class ResponseImpl[A](body: Option[A]) extends Response[Option, A]
@@ -47,7 +56,6 @@ object TestImpl {
   def testModel(id: Long = idAccumulator.getAndIncrement()): Model = TestModel(Some(id), "")
   def eventGen: Event = Event(ts = ts, model = testModel())
   def eventsF = List(eventGen)
-  def eventsIO = IO(eventsF)
   def testRequest: Req = RequestImpl(Some(eventGen))
 
   class TestConnection extends Connection {
@@ -79,11 +87,8 @@ object TestImpl {
     }
   }
 
-  case class ServerImpl(conn: IO[Connection]) extends Server[IO] {
-    def convert: Req => Resp = req =>
-      ResponseImpl(req.entity.map{ event =>
-        event.copy(model = TestModel(event.model.id, "updated model"))
-      })
-  }
-  case class ClientImpl(conn: IO[Connection]) extends Client[IO]
+  def convert: Req => Resp = req =>
+    ResponseImpl(req.entity.map{ event =>
+      event.copy(model = TestModel(event.model.id, "updated model"))
+    })
 }

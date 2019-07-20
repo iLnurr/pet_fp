@@ -20,16 +20,16 @@ object TestStreamProcess extends App {
 
   eval(Option(Random.nextLong())).map(l => println(s"First $l")).runLog
 
-  eval(run(IO(Option(Random.nextLong())))).map(l => println(s"Second $l")).runLog
-
-  def acquire =
-    IO(Option(Random.nextLong()))
-  def use(l: Option[Long]): StreamProcess[IO,Option[Long]] =
-    eval(IO(l))
-  def release(l: Option[Long]): StreamProcess[IO,Option[Long]] =
-    eval(IO(l))
-
-
-  resource_(acquire){l => eval(IO(l))}{_ => IO(())}.map(ll => println(s"Third $ll")).runLog
+//  eval(run(IO(Option(Random.nextLong())))).map(l => println(s"Second $l")).runLog
+//
+//  def acquire =
+//    IO(Option(Random.nextLong()))
+//  def use(l: Option[Long]): StreamProcess[IO,Option[Long]] =
+//    eval(IO(l))
+//  def release(l: Option[Long]): StreamProcess[IO,Option[Long]] =
+//    eval(IO(l))
+//
+//
+//  resource_(acquire){l => eval(IO(l))}{_ => IO(())}.map(ll => println(s"Third $ll")).runLog
 
 }
