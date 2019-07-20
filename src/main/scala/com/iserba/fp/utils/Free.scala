@@ -10,7 +10,7 @@ sealed trait Free[F[_],A] { self =>
     FlatMap(this, f)
   def map[B](f: A => B): Free[F,B] =
     flatMap(f andThen (Return(_)))
-  def run(implicit F: Monad[F]): F[A] =
+  def runFree(implicit F: Monad[F]): F[A] =
     Free.run(self)
 }
 object Free {

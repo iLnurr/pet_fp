@@ -4,7 +4,6 @@ import java.util.concurrent.atomic.AtomicLong
 
 import com.iserba.fp._
 import com.iserba.fp.algebra._
-import com.iserba.fp.utils.{Free, StreamProcess}
 import test.TestImpl._
 
 import scala.collection.mutable
@@ -15,23 +14,27 @@ import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
   import parFIO._
-  val testConnection: IO[Connection] = parFIO.now(new TestConnection)
-  def runServer: StreamProcess[IO, Resp] = {
-    new Server[IO] {
-      override def convert: Req => Resp = TestImpl.convert
-    }.run(testConnection)
+  val testConnection: IO[Connection] = IO(new TestConnection)
+  val server = new Server[IO] {
+    override def convert: Req => Resp = TestImpl.convert
   }
   val client1 = new Client[IO]{}
   val client2 = new Client[IO]{}
-  def makeReq(client: Client[IO]): StreamProcess[IO, Resp] = {
-    client.call(testRequest, testConnection)
-  }
-  val serverRun = runServer.runStreamProcess.run
-  val reqs = (makeReq(client1) ++ makeReq(client2)).runStreamProcess.run
+
+  val serverRunParF =
+    server
+      .run(testConnection)
+      .runStreamProcess
+      .runFree
+
+  val requestsParF =
+    (client1.call(testRequest, testConnection) ++ client2.call(testRequest, testConnection))
+      .runStreamProcess
+      .runFree
 
   Await.result(for {
-    _ <- serverRun
-    _ <- reqs
+    _ <- serverRunParF
+    _ <- requestsParF
   } yield {}, Duration.Inf)
 
 }
