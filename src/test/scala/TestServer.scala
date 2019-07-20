@@ -14,12 +14,13 @@ import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
   import parFIO._
-  val testConnection: IO[Connection] = IO(new TestConnection)
-  val server = new Server[IO] {
+  type F[A] = IO[A]
+  val testConnection: F[Connection] = IO(new TestConnection)
+  val server = new Server[F] {
     override def convert: Req => Resp = TestImpl.convert
   }
-  val client1 = new Client[IO]{}
-  val client2 = new Client[IO]{}
+  val client1 = new Client[F]{}
+  val client2 = new Client[F]{}
 
   val serverRunParF =
     server
@@ -32,10 +33,12 @@ object Test extends App {
       .runStreamProcess
       .runFree
 
-  Await.result(for {
+  val program = for {
     _ <- serverRunParF
     _ <- requestsParF
-  } yield {}, Duration.Inf)
+  } yield ()
+
+  Await.result(program, Duration.Inf)
 
 }
 
