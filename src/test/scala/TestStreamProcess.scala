@@ -1,15 +1,16 @@
 package test
 
 import com.iserba.fp.utils.StreamProcessHelper._
-import com.iserba.fp._
+import com.iserba.fp.{parFIO, _}
 import com.iserba.fp.utils.Monad.MonadCatch
 import com.iserba.fp.utils.Free._
-import com.iserba.fp.utils.StreamProcess
+import com.iserba.fp.utils.{Free, StreamProcess}
 
 import scala.util.Random
 
 object TestStreamProcess extends App {
-  implicit val optMC = new MonadCatch[({type f[a] = Option[a]})#f] {
+  import parFIO._
+  implicit val optMC: MonadCatch[Option] = new MonadCatch[({type f[a] = Option[a]})#f] {
     override def attempt[A](a: Option[A]): Option[Either[Throwable, A]] = a.map{v =>
       Right(v)
     }
@@ -20,16 +21,19 @@ object TestStreamProcess extends App {
 
   eval(Option(Random.nextLong())).map(l => println(s"First $l")).runLog
 
-//  eval(run(IO(Option(Random.nextLong())))).map(l => println(s"Second $l")).runLog
-//
-//  def acquire =
-//    IO(Option(Random.nextLong()))
-//  def use(l: Option[Long]): StreamProcess[IO,Option[Long]] =
-//    eval(IO(l))
-//  def release(l: Option[Long]): StreamProcess[IO,Option[Long]] =
-//    eval(IO(l))
-//
-//
-//  resource_(acquire){l => eval(IO(l))}{_ => IO(())}.map(ll => println(s"Third $ll")).runLog
+  eval(run(IO(Option(Random.nextLong())))).map(l => println(s"Second $l")).runLog
+
+  def acquire: IO[Option[Long]] =
+    IO(Option(Random.nextLong()))
+  def use(l: Option[Long]): StreamProcess[IO,Option[Long]] =
+    eval(IO{
+      println(s"Third $l")
+      l
+    })
+  def release(l: Option[Long]): StreamProcess[IO,Option[Long]] =
+    eval(IO(l))
+
+
+  Free.run(resource(acquire){l => use(l)}{l => release(l)}.runLog)
 
 }
