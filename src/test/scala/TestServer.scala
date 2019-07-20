@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import com.iserba.fp._
 import com.iserba.fp.algebra._
-import com.iserba.fp.utils.Free
+import com.iserba.fp.utils.{Free, StreamProcess}
 import test.TestImpl._
 
 import scala.collection.mutable
@@ -15,11 +15,11 @@ import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
   val testConnection: IO[Connection] = parFIO.now(new TestConnection)
-  def runServer: ParF[IndexedSeq[Resp]] = {
+  def runServer: StreamProcess[ParF, Resp] = {
     new Server[ParF] {
       override def convert: Req => Resp = TestImpl.convert
       override def conn: ParF[Connection] = Free.run(testConnection)
-    }.run().runLog
+    }.run()
   }
   val client1 = new Client[ParF] {
     override def conn: ParF[Connection] = Free.run(testConnection)
@@ -27,21 +27,15 @@ object Test extends App {
   val client2 = new Client[ParF] {
     override def conn: ParF[Connection] = Free.run(testConnection)
   }
-  def makeReq(client: Client[ParF]): ParF[IndexedSeq[Resp]] = {
-    client.call(testRequest).runLog
+  def makeReq(client: Client[ParF]): StreamProcess[ParF, Resp] = {
+    client.call(testRequest)
   }
-  val serverRun = runServer
-  val req1 = makeReq(client1)
-  val req2 = makeReq(client2)
-  val req3 = makeReq(client1)
-  val req4 = makeReq(client2)
+  val serverRun = runServer.runLog
+  val reqs = (makeReq(client1) ++ makeReq(client2)).runLog
 
   Await.result(for {
     _ <- serverRun
-    _ <- req1
-    _ <- req2
-    _ <- req3
-    _ <- req4
+    _ <- reqs
   } yield {}, Duration.Inf)
 
 }
