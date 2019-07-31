@@ -1,8 +1,28 @@
+import Deps._
+import Settings._
+
 name := "pet_fp"
 
 version := "0.1"
 
-scalaVersion := "2.13.0"
+lazy val root = project
+  .in(file("."))
+  .aggregate(redProject, greenProject)
 
-libraryDependencies += "org.typelevel" %% "cats-effect" % "2.0.0-M4"
-libraryDependencies += "org.typelevel" %% "cats-core" % "2.0.0-M4"
+lazy val redProject = project
+  .in(file("redProject"))
+  .settings(commonSettings())
+  .settings(
+    version := "0.1",
+    name    := "redBookPetProject",
+    libraryDependencies ++= redProjectDeps
+  )
+
+lazy val greenProject = project
+  .in(file("greenProject"))
+  .settings(commonSettings())
+  .settings(
+    version := "0.1",
+    name    := "scalaWithCatsPetProject",
+    libraryDependencies ++= greenProjectDeps
+  )
