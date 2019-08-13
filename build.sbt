@@ -5,9 +5,11 @@ name := "pet_fp"
 
 version := "0.1"
 
+resolvers += "Sonatype Public" at "https://oss.sonatype.org/content/groups/public/"
+
 lazy val root = project
   .in(file("."))
-  .aggregate(redProject, greenProject)
+  .aggregate(redProject, greenProject, blackProject)
 
 lazy val redProject = project
   .in(file("redProject"))
@@ -25,4 +27,13 @@ lazy val greenProject = project
     version := "0.1",
     name    := "scalaWithCatsPetProject",
     libraryDependencies ++= greenProjectDeps
+  )
+
+lazy val blackProject = project
+  .in(file("blackProject"))
+  .settings(commonSettings())
+  .settings(
+    version := "0.1",
+    name    := "fs2WSserver",
+    libraryDependencies ++= blackProjectDeps
   )

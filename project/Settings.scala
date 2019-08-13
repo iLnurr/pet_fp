@@ -8,7 +8,6 @@ object Settings {
   )
   
   def commonSettings() = Seq(
-    scalaVersion := "2.13.0",
-    scalacOptions ++= scalacOpts
+    scalaVersion := "2.12.8"
   )
 }
