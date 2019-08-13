@@ -14,13 +14,12 @@ import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
   import parFIO._
-  type F[A] = IO[A]
-  val testConnection: F[Connection] = IO(new TestConnection)
-  val server = new Server[F] {
+  val testConnection: IO[Connection] = IO(new TestConnection)
+  val server = new Server[IO] {
     override def convert: Req => Resp = TestImpl.convert
   }
-  val client1 = new Client[F]{}
-  val client2 = new Client[F]{}
+  val client1 = new Client[IO]{}
+  val client2 = new Client[IO]{}
 
   val serverProgram =
     server
@@ -84,7 +83,7 @@ object TestImpl {
     }
 
     def addResponse(resp: Resp, req: Req): Resp = {
-      responses.addOne(req,resp)
+      responses.update(req,resp)
       resp
     }
   }

@@ -6,6 +6,8 @@ import com.iserba.fp.utils.Monad.MonadCatch
 import com.iserba.fp.utils.Free._
 import com.iserba.fp.utils.{Free, StreamProcess}
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 import scala.util.Random
 
 object TestStreamProcess extends App {
@@ -34,8 +36,9 @@ object TestStreamProcess extends App {
     eval(IO(l))
 
 
-  Free.run( // end of ev
+  val f = Free.run( // end of ev
     resource(acquire){l => use(l)}{l => release(l)}.runStreamProcess // IO streams
   )
 
+  Await.result(f, Duration.Inf)
 }
