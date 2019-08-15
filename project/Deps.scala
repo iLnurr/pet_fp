@@ -5,12 +5,16 @@ object Deps {
     val fs2_http = "0.4.0"
     val circe = "0.11.1"
     val enumeratum = "1.5.13"
+    val catsTagless  = "0.9"
   }
 
   private lazy val cats = Seq(
     "org.typelevel" %% "cats-core" % Versions.cats,
     "org.typelevel" %% "cats-effect" % Versions.cats
   )
+
+  private lazy val catsEffect = Seq("org.typelevel" %% "cats-effect" % Versions.cats)
+  private lazy val catsTagless = Seq("org.typelevel" %% "cats-tagless-macros" % Versions.catsTagless)
 
   private lazy val fs2 = Seq(
     "com.spinoco" %% "fs2-http" % Versions.fs2_http
@@ -32,5 +36,5 @@ object Deps {
 
   lazy val greenProjectDeps: Seq[ModuleID] = cats
 
-  lazy val blackProjectDeps: Seq[ModuleID] = fs2 ++ cats ++ circe ++ enumeratum
+  lazy val blackProjectDeps: Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ enumeratum
 }

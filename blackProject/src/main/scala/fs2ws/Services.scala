@@ -2,12 +2,12 @@ package fs2ws
 
 import cats.Monad
 import cats.effect.IO
-import fs2ws.domain._
+import fs2ws.Domain._
 
 import scala.collection.mutable.ArrayBuffer
 
 object Services {
-  def auth: AuthReq => IO[OutputMsg] = ar =>
+  def auth: AuthReq => IO[Message] = ar =>
     Users.getByName(ar.username).map {
       case Some(user) =>
         AuthSuccessResp(user.user_type)
@@ -15,27 +15,27 @@ object Services {
         AuthFailResp()
     }
 
-  def ping: PingReq => IO[OutputMsg] = req =>
+  def ping: PingReq => IO[Message] = req =>
     IO.pure(PongResponse(req.seq))
 
-  def tables: TableMsg => IO[OutputMsg] = {
-    case domain.SubscribeTables(_) =>
+  def tables: TableMsg => IO[TableMsg] = {
+    case SubscribeTables(_) =>
       Tables.list.map(seq => TableList(seq))
-    case domain.AddTableReq(after_id, table, _) =>
+    case AddTableReq(after_id, table, _) =>
       Tables.add(table).flatMap {
         case Left(value) =>
           IO.pure(UpdateTableFailResponse(after_id))
         case Right(inserted) =>
           IO.pure(UpdateTableResponse(inserted))
       }
-    case domain.UpdateTableReq(table, _) =>
+    case UpdateTableReq(table, _) =>
       Tables.update(table).flatMap {
         case Left(value) =>
           IO.pure(UpdateTableFailResponse(table.id.getOrElse(-1L)))
         case Right(value) =>
           IO.pure(UpdateTableResponse(table))
       }
-    case domain.RemoveTableReq(id, _) =>
+    case RemoveTableReq(id, _) =>
       Tables.remove(id).flatMap {
         case Left(value) =>
           IO.pure(RemoveTableFailResponse(id))
