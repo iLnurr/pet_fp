@@ -17,7 +17,7 @@ import spinoco.protocol.http._
 
 import scala.concurrent.duration._
 
-object Server {
+object server {
   implicit val AG: AsynchronousChannelGroup =
     AsynchronousChannelGroup
       .withThreadPool(Executors.newCachedThreadPool(util.mkThreadFactory("fs2-http-spec-AG", daemon = true)))
