@@ -3,17 +3,20 @@ package fs2ws
 import java.net.InetSocketAddress
 import java.nio.channels.AsynchronousChannelGroup
 import java.util.concurrent.Executors
-
-import cats.effect.{Concurrent, ConcurrentEffect, Timer}
+import io.circe.generic.auto._, io.circe.syntax._, io.circe.parser._
+import cats.effect.{Concurrent, ConcurrentEffect, IO, Timer}
 import fs2._
+import fs2ws.domain._
 import scodec.Attempt.{Failure, Successful}
 import scodec.bits.ByteVector
 import scodec.{Codec, Err}
 import spinoco.fs2.http
 import spinoco.fs2.http._
 import spinoco.fs2.http.websocket.Frame
+import spinoco.fs2.http.websocket.Frame.Text
 import spinoco.protocol.http.Uri.Path
 import spinoco.protocol.http._
+
 
 import scala.concurrent.duration._
 
@@ -48,7 +51,28 @@ object server {
     }
   }
 
-  def start[F[_]: ConcurrentEffect: Timer](wsPipe: Pipe[F, Frame[String], Frame[String]]): Stream[F, Unit] = {
-    http.server[F](new InetSocketAddress("127.0.0.1", 9000))(service(_,_)(wsPipe))
+  def start[F[_]: ConcurrentEffect: Timer]: Stream[F, Unit] = {
+    http.server[F](new InetSocketAddress("127.0.0.1", 9000))(service(_,_)(_.map(convert)))
+  }
+  def convert: Frame[String] => Frame[String] = { f =>
+    println(s"Server got request: ${f.a}")
+    Text(f.a)
+  }
+
+  def processMsg(msg: IncomingMsg, userType: String): IO[OutputMsg] = msg match {
+    case req: AuthReq =>
+      Services.auth(req)
+    case req: PingReq =>
+      Services.ping(req)
+    case req: SubscribeTables =>
+      Services.tables(req)
+    case req: UnsubscribeTables =>
+      Services.tables(req)
+    case req: AddTableReq =>
+      Services.tables(req)
+    case req: UpdateTableReq =>
+      Services.tables(req)
+    case req: RemoveTableReq =>
+      Services.tables(req)
   }
 }
