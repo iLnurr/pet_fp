@@ -4,7 +4,7 @@ import java.net.InetSocketAddress
 import java.nio.channels.AsynchronousChannelGroup
 import java.util.concurrent.Executors
 
-import cats.effect.IO
+import cats.effect.{Concurrent, ConcurrentEffect, Timer}
 import fs2._
 import scodec.Attempt.{Failure, Successful}
 import scodec.bits.ByteVector
@@ -14,21 +14,9 @@ import spinoco.fs2.http._
 import spinoco.fs2.http.websocket.Frame
 import spinoco.protocol.http._
 
-import java.nio.channels.AsynchronousChannelGroup
-import java.util.concurrent.Executors
-
-import cats.effect.{Concurrent, ContextShift, IO, Timer}
-
-import scala.concurrent.ExecutionContext
-
 import scala.concurrent.duration._
 
-
-object Server extends App {
-
-  implicit val _cxs: ContextShift[IO] = IO.contextShift(ExecutionContext.Implicits.global)
-  implicit val _timer: Timer[IO] = IO.timer(ExecutionContext.Implicits.global)
-  implicit val _concurrent: Concurrent[IO] = IO.ioConcurrentEffect(_cxs)
+object Server {
   implicit val AG: AsynchronousChannelGroup = AsynchronousChannelGroup.withThreadPool(Executors.newCachedThreadPool(util.mkThreadFactory("fs2-http-spec-AG", daemon = true)))
 
   implicit val codec: Codec[String] = scodec.codecs.bytes.exmap[String](
@@ -42,15 +30,11 @@ object Server extends App {
     }
   )
 
-  def service(request: HttpRequestHeader, body: Stream[IO,Byte]): Stream[IO,HttpResponse[IO]] = {
-    spinoco.fs2.http.websocket.server(wsPipe, 1.second)(request, body).onFinalize(IO.delay(println("WS DONE")))
+  def service[F[_]](request: HttpRequestHeader, body: Stream[F,Byte])(wsPipe: Pipe[F, Frame[String], Frame[String]])(implicit conc: Concurrent[F], timer: Timer[F]): Stream[F, HttpResponse[F]] = {
+    spinoco.fs2.http.websocket.server[F,String,String](wsPipe, 1.second)(request, body).onFinalize(conc.delay(println("WS DONE")))
   }
 
-  def wsPipe: Pipe[IO, Frame[String], Frame[String]] = { inbound =>
-    inbound
+  def start[F[_]: ConcurrentEffect: Timer](wsPipe: Pipe[F, Frame[String], Frame[String]]): Stream[F, Unit] = {
+    http.server[F](new InetSocketAddress("127.0.0.1", 9000))(service(_,_)(wsPipe))
   }
-
-  val serv = http.server[IO](new InetSocketAddress("127.0.0.1", 9000))(service)
-
-  serv.compile.drain.unsafeRunSync()
 }

@@ -18,5 +18,5 @@ object Deps {
 
   lazy val greenProjectDeps: Seq[ModuleID] = cats
 
-  lazy val blackProjectDeps: Seq[ModuleID] = fs2
+  lazy val blackProjectDeps: Seq[ModuleID] = fs2 ++ cats
 }
