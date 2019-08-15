@@ -18,7 +18,9 @@ import spinoco.protocol.http._
 import scala.concurrent.duration._
 
 object Server {
-  implicit val AG: AsynchronousChannelGroup = AsynchronousChannelGroup.withThreadPool(Executors.newCachedThreadPool(util.mkThreadFactory("fs2-http-spec-AG", daemon = true)))
+  implicit val AG: AsynchronousChannelGroup =
+    AsynchronousChannelGroup
+      .withThreadPool(Executors.newCachedThreadPool(util.mkThreadFactory("fs2-http-spec-AG", daemon = true)))
 
   implicit val codec: Codec[String] = scodec.codecs.bytes.exmap[String](
     bv => bv.decodeUtf8 match {
@@ -31,10 +33,13 @@ object Server {
     }
   )
 
-  def service[F[_]](request: HttpRequestHeader, body: Stream[F,Byte])(wsPipe: Pipe[F, Frame[String], Frame[String]])(implicit conc: Concurrent[F], timer: Timer[F]): Stream[F, HttpResponse[F]] = {
+  def service[F[_]](request: HttpRequestHeader, body: Stream[F,Byte])
+                   (wsPipe: Pipe[F, Frame[String], Frame[String]])
+                   (implicit conc: Concurrent[F], timer: Timer[F]): Stream[F, HttpResponse[F]] = {
     request.path match {
       case Path(true, false, Seq("ws_api")) =>
-        spinoco.fs2.http.websocket.server[F,String,String](wsPipe, 1.second)(request, body).onFinalize(conc.delay(println("WS DONE")))
+        spinoco.fs2.http.websocket.server[F,String,String](wsPipe, 1.second)(request, body)
+          .onFinalize(conc.delay(println("WS DONE")))
       case other =>
         Stream.emit{
           println(s"Client try to connect to path=${other.segments.mkString("/","/","")}. \nBad request=$request")
