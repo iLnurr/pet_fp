@@ -12,6 +12,7 @@ import scodec.{Codec, Err}
 import spinoco.fs2.http
 import spinoco.fs2.http._
 import spinoco.fs2.http.websocket.Frame
+import spinoco.protocol.http.Uri.Path
 import spinoco.protocol.http._
 
 import scala.concurrent.duration._
@@ -31,7 +32,15 @@ object Server {
   )
 
   def service[F[_]](request: HttpRequestHeader, body: Stream[F,Byte])(wsPipe: Pipe[F, Frame[String], Frame[String]])(implicit conc: Concurrent[F], timer: Timer[F]): Stream[F, HttpResponse[F]] = {
-    spinoco.fs2.http.websocket.server[F,String,String](wsPipe, 1.second)(request, body).onFinalize(conc.delay(println("WS DONE")))
+    request.path match {
+      case Path(true, false, Seq("ws_api")) =>
+        spinoco.fs2.http.websocket.server[F,String,String](wsPipe, 1.second)(request, body).onFinalize(conc.delay(println("WS DONE")))
+      case other =>
+        Stream.emit{
+          println(s"Client try to connect to path=${other.segments.mkString("/","/","")}. \nBad request=$request")
+          HttpResponse(HttpStatusCode.NotFound)
+        }
+    }
   }
 
   def start[F[_]: ConcurrentEffect: Timer](wsPipe: Pipe[F, Frame[String], Frame[String]]): Stream[F, Unit] = {
