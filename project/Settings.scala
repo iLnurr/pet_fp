@@ -2,12 +2,13 @@ import sbt.Keys._
 import sbt._
 
 object Settings {
-  private val scalacOpts = Seq(
-    "-Xfatal-warnings",
-    "-Ypartial-unification"
-  )
-  
   def commonSettings() = Seq(
-    scalaVersion := "2.12.8"
+    scalaVersion := "2.12.8",
+    Compile/scalacOptions ++= Seq(
+      "-deprecation",
+      "-feature",
+      "-language:higherKinds",
+      "-language:existentials"
+    )
   )
 }
