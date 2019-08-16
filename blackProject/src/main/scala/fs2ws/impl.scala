@@ -19,11 +19,7 @@ class FS2ServerImpl(implicit
                  encoder: JsonEncoder[IO, Message],
                  processor: MessageProcessorAlgebra[IO, Message, Message]
                 ) extends ServerAlgebra[IO, Message, Message] {
-  override def processEvent(raw: String)
-                           (implicit
-                            decoder: JsonDecoder[IO, Message],
-                            encoder: JsonEncoder[IO, Message],
-                            processor: MessageProcessorAlgebra[IO, Message, Message]): IO[String] = {
+  override def processEvent(raw: String): IO[String] = {
     for {
       msg <- decoder.fromJson(raw)
       responseMsg <- processor.handler(msg)
@@ -34,7 +30,7 @@ class FS2ServerImpl(implicit
   override def startWS(port: Int): IO[Unit] =
     FS2Server
       .start[IO](
-        FS2Server.dummyWsPipe(processEvent(_).unsafeRunSync() )// TODO fix it
+        FS2Server.dummyWsPipe(processEvent)
       )
       .compile
       .drain

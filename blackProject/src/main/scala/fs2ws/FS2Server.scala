@@ -5,6 +5,7 @@ import java.nio.channels.AsynchronousChannelGroup
 import java.util.UUID
 import java.util.concurrent.Executors
 
+import cats.Functor
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import io.circe.generic.auto._
@@ -107,13 +108,14 @@ object FS2Server {
         (wsPipe)
         (clients)))
   }
-  def frameConvert(func: String => String): Frame[String] => Frame[String] = { f =>
-    println(s"Server got request: ${f.a}")
-    val resp = func(f.a)
-    println(s"Server response: $resp")
-    Text(resp)
+  def frameConvert[F[_]](func: String => F[String])(implicit F: Functor[F]): Frame[String] => F[Frame[String]] = { frame =>
+    println(s"Server got request: ${frame.a}")
+    func(frame.a).map{resp =>
+      println(s"Server response: $resp")
+      Text(resp)
+    }
   }
 
-  def dummyWsPipe[F[_]](convertF: String => String): PipeWithState[F, Frame[String], Frame[String]] = (input, clients) =>
-    (input.map(frameConvert(convertF)),clients)
+  def dummyWsPipe[F[_]: Functor](convertF: String => F[String]): PipeWithState[F, Frame[String], Frame[String]] = (input, clients) =>
+    (input.evalMap(frameConvert(convertF)),clients)
 }

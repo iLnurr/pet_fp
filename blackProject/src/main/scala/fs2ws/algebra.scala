@@ -19,10 +19,6 @@ trait JsonDecoder[F[_], A] {
 
 @finalAlg
 trait ServerAlgebra[F[_],I,O] {
-  def processEvent(raw: String)
-                       (implicit
-                          decoder: JsonDecoder[F, I],
-                          encoder: JsonEncoder[F,O],
-                          processor: MessageProcessorAlgebra[F,I,O]): F[String]
+  def processEvent(raw: String): F[String]
   def startWS(port: Int): F[Unit]
 }
