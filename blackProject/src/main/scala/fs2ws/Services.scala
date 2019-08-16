@@ -1,13 +1,40 @@
 package fs2ws
 
-import cats.Monad
-import cats.effect.IO
+import cats.effect.{IO, Sync}
+import cats.syntax.flatMap._
 import fs2ws.Domain._
 
 import scala.collection.mutable.ArrayBuffer
 
 object Services {
-  def auth: AuthReq => IO[Message] = ar =>
+  def handle: Message => IO[Message] = {
+    case msg: AuthMsg => msg match {
+      case ar: AuthReq =>
+        auth(ar)
+      case _ =>
+        IO.raiseError(new RuntimeException(s"Can't handle $msg"))
+    }
+    case commands: PrivilegedCommands => commands match {
+      case addTableReq: AddTableReq =>
+        tables(addTableReq)
+      case updateTableReq: UpdateTableReq =>
+        tables(updateTableReq)
+      case removeTableReq: RemoveTableReq =>
+        tables(removeTableReq)
+    }
+    case msg: TableMsg =>
+      tables(msg)
+    case msg: PingMsg => msg match {
+      case pr: PingReq =>
+        ping(pr)
+      case _ =>
+        IO.raiseError(new RuntimeException(s"Can't handle $msg"))
+    }
+    case msg =>
+      IO.raiseError(new RuntimeException(s"Can't handle $msg"))
+  }
+
+  private def auth: AuthReq => IO[Message] = ar =>
     Users.getByName(ar.username).map {
       case Some(user) =>
         AuthSuccessResp(user.user_type)
@@ -15,10 +42,10 @@ object Services {
         AuthFailResp()
     }
 
-  def ping: PingReq => IO[Message] = req =>
+  private def ping: PingReq => IO[Message] = req =>
     IO.pure(PongResponse(req.seq))
 
-  def tables: TableMsg => IO[TableMsg] = {
+  private def tables: TableMsg => IO[TableMsg] = {
     case SubscribeTables(_) =>
       Tables.list.map(seq => TableList(seq))
     case AddTableReq(after_id, table, _) =>
@@ -44,21 +71,21 @@ object Services {
       }
   }
 }
-class DB[F[_],T <: DBEntity](implicit F: Monad[F]) {
+class DB[F[_],T <: DBEntity](implicit F: Sync[F]) {
   private val repo = ArrayBuffer[T]()
   def getById(id: Long): F[Option[T]] =
-    F.pure(repo.find(_.id == Option(id)))
+    F.delay(repo.find(_.id == Option(id)))
   def getByName(n: String): F[Option[T]] =
-    F.pure(repo.find(_.name == n))
+    F.delay(repo.find(_.name == n))
   def add(ent: T): F[Either[Throwable, T]] =
-    F.pure(Right{
+    F.delay(Right{
       repo.append(ent)
       ent
     })
   def list: F[Seq[T]] =
-    F.pure(repo.toSeq)
+    F.delay(repo.toSeq)
   def update(ent: T): F[Either[Throwable, Unit]] =
-    F.pure{
+    F.delay{
       repo.find(_.id == ent.id).map{e =>
         repo -= e
         e
@@ -68,7 +95,7 @@ class DB[F[_],T <: DBEntity](implicit F: Monad[F]) {
     }
 
   def remove(id: Long): F[Either[Throwable, Unit]] =
-    F.pure {
+    F.delay {
       repo.find(_.id == Option(id)).map(e => repo -= e)
       Right(())
     }
@@ -78,7 +105,6 @@ object Users extends DB[IO, User] {
   val admin = User(Option(0L), "admin", "admin", UserType.ADMIN)
   val user = User(Option(1L), "un", "upwd", UserType.USER)
 
-  add(admin)
-  add(user)
+  (add(admin) >> add(user)).unsafeRunSync()
 }
 object Tables extends DB[IO, Table]

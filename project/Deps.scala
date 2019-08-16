@@ -29,7 +29,8 @@ object Deps {
     "io.circe" %% "circe-core",
     "io.circe" %% "circe-generic",
     "io.circe" %% "circe-parser",
-    "io.circe" %% "circe-refined"
+    "io.circe" %% "circe-refined",
+    "io.circe" %% "circe-generic-extras"
   ).map(_ % Versions.circe)
 
   lazy val redProjectDeps: Seq[ModuleID]  = Seq()

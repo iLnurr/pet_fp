@@ -1,9 +1,10 @@
 package fs2ws
 
-import fs2ws.Domain.{AuthReq, Msg}
+import fs2ws.Domain.{AuthReq, AuthSuccessResp, Msg}
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.parser._
+
 
 object JsonSerDeTest extends App {
   val authReq = AuthReq(username = "un", password = "pwd")
@@ -23,5 +24,8 @@ object JsonSerDeTest extends App {
   println(parse(json))
   println(parse(json).right.get.as[Msg])
 
+  import JsonSerDe._
+  println(incomingMessageDecoder.fromJson(json).unsafeRunSync())
+  println(responseEncoder.toJson(AuthSuccessResp("admin")).unsafeRunSync())
 
 }

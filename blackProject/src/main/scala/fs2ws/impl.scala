@@ -3,26 +3,13 @@ package fs2ws
 import cats.effect.{ConcurrentEffect, ContextShift, IO, Timer}
 import fs2ws.Domain._
 import io.circe.generic.auto._
+import io.circe.generic.extras.Configuration
 import io.circe.syntax._
 import io.circe.parser._
 
 class MessageProcessorAlgebraImpl extends MessageProcessorAlgebra[IO, Message, Message] {
-  override def handler: Message => IO[Message] = {
-    case req: AuthReq =>
-      Services.auth(req)
-    case req: PingReq =>
-      Services.ping(req)
-    case req: SubscribeTables =>
-      Services.tables(req)
-    case req: UnsubscribeTables =>
-      Services.tables(req)
-    case req: AddTableReq =>
-      Services.tables(req)
-    case req: UpdateTableReq =>
-      Services.tables(req)
-    case req: RemoveTableReq =>
-      Services.tables(req)
-  }
+  override def handler: Message => IO[Message] =
+    Services.handle
 }
 class FS2ServerImpl(implicit
                  cs: ContextShift[IO],
@@ -85,48 +72,10 @@ object JsonSerDe {
       }
   }
 
+  import io.circe.generic.extras.auto._
+  implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("type")
   implicit def responseEncoder: JsonEncoder[IO, Message] = new JsonEncoder[IO, Message] {
-    override def toJson(value: Message): IO[String] = value match {
-      case msg: AuthMsg => msg match {
-        case m: AuthReq =>
-          IO.pure(m.asJson.toString())
-        case m: AuthFailResp =>
-          IO.pure(m.asJson.toString())
-        case m: AuthSuccessResp =>
-          IO.pure(m.asJson.toString())
-      }
-      case commands: Domain.PrivilegedCommands => commands match {
-        case m: NotAuthorized =>
-          IO.pure(m.asJson.toString())
-        case m: UpdateTableFailResponse =>
-          IO.pure(m.asJson.toString())
-        case m: RemoveTableFailResponse =>
-          IO.pure(m.asJson.toString())
-        case m: TableAddedResponse =>
-          IO.pure(m.asJson.toString())
-        case m: RemoveTableResponse =>
-          IO.pure(m.asJson.toString())
-        case m: UpdateTableResponse =>
-          IO.pure(m.asJson.toString())
-      }
-      case msg: TableMsg => msg match {
-        case m: TableList =>
-          IO.pure(m.asJson.toString())
-        case m: UpdateTableFailResponse =>
-          IO.pure(m.asJson.toString())
-        case m: RemoveTableFailResponse =>
-          IO.pure(m.asJson.toString())
-        case m: TableAddedResponse =>
-          IO.pure(m.asJson.toString())
-        case m: RemoveTableResponse =>
-          IO.pure(m.asJson.toString())
-        case m: UpdateTableResponse =>
-          IO.pure(m.asJson.toString())
-      }
-      case msg: PingMsg => msg match {
-        case m: PongResponse =>
-          IO.pure(m.asJson.toString())
-      }
-    }
+    override def toJson(value: Message): IO[String] =
+      IO.pure(value.asJson.noSpaces)
   }
 }
