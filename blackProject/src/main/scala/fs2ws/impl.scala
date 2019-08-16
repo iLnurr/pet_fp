@@ -33,8 +33,8 @@ class FS2ServerImpl(implicit
 
   override def startWS(port: Int): IO[Unit] =
     FS2Server
-      .start[IO](s =>
-        processEvent(s).unsafeRunSync() // TODO fix it
+      .start[IO](
+        FS2Server.dummyWsPipe(processEvent(_).unsafeRunSync() )// TODO fix it
       )
       .compile
       .drain
