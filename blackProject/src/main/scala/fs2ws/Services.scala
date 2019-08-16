@@ -1,10 +1,13 @@
 package fs2ws
 
+import java.util.concurrent.atomic.AtomicLong
+
 import cats.effect.{IO, Sync}
 import cats.syntax.flatMap._
 import fs2ws.Domain._
 
 import scala.collection.mutable.ArrayBuffer
+import scala.util.Try
 
 object Services {
   def handle: Message => IO[Message] = {
@@ -71,33 +74,37 @@ object Services {
       }
   }
 }
-class DB[F[_],T <: DBEntity](implicit F: Sync[F]) {
+abstract class DB[F[_],T <: DBEntity](implicit F: Sync[F]) {
   private val repo = ArrayBuffer[T]()
+  private val counter = new AtomicLong(0L)
+  def setIdIfEmpty: Long => T => T
   def getById(id: Long): F[Option[T]] =
     F.delay(repo.find(_.id == Option(id)))
   def getByName(n: String): F[Option[T]] =
     F.delay(repo.find(_.name == n))
   def add(ent: T): F[Either[Throwable, T]] =
     F.delay(Right{
-      repo.append(ent)
-      ent
+      val checked = setIdIfEmpty(counter.incrementAndGet())(ent)
+      repo.append(checked)
+      checked
     })
   def list: F[Seq[T]] =
     F.delay(repo.toSeq)
   def update(ent: T): F[Either[Throwable, Unit]] =
     F.delay{
-      repo.find(_.id == ent.id).map{e =>
-        repo -= e
-        e
-      }
-      repo += ent
-      Right(())
+      Try{
+        repo
+          .find(_.id == ent.id)
+          .foreach(e => repo -= e)
+        repo.append(ent)
+      }.toEither
     }
 
   def remove(id: Long): F[Either[Throwable, Unit]] =
     F.delay {
-      repo.find(_.id == Option(id)).map(e => repo -= e)
-      Right(())
+      Try(repo.find(_.id == Option(id))
+        .foreach(e => repo -= e))
+        .toEither
     }
 }
 
@@ -106,5 +113,11 @@ object Users extends DB[IO, User] {
   val user = User(Option(1L), "un", "upwd", UserType.USER)
 
   (add(admin) >> add(user)).unsafeRunSync()
+
+  override def setIdIfEmpty: Long => User => User = newId => input =>
+    input.copy(id = Some(input.id.getOrElse(newId)))
 }
-object Tables extends DB[IO, Table]
+object Tables extends DB[IO, Table] {
+  override def setIdIfEmpty: Long => Table => Table = newId => input =>
+    input.copy(id = Some(input.id.getOrElse(newId)))
+}
