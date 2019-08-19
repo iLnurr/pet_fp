@@ -1,18 +1,17 @@
 package fs2ws
 
-import cats.effect.{ConcurrentEffect, ContextShift, IO, Timer}
+import cats.effect.{ConcurrentEffect, IO, Timer}
 import fs2ws.Domain._
 import io.circe.generic.auto._
 import io.circe.generic.extras.Configuration
-import io.circe.syntax._
 import io.circe.parser._
+import io.circe.syntax._
 
 class MessageProcessorAlgebraImpl extends MessageProcessorAlgebra[IO, Message, Message] {
   override def handler: Message => IO[Message] =
     Services.handle
 }
 class FS2ServerImpl(implicit
-                 cs: ContextShift[IO],
                  timer: Timer[IO],
                  ce: ConcurrentEffect[IO],
                  decoder: JsonDecoder[IO, Message],

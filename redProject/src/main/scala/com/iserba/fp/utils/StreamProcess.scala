@@ -5,8 +5,6 @@ import com.iserba.fp.utils.StreamProcess._
 import StreamProcessHelper._
 import com.iserba.fp.IO
 
-import language.implicitConversions
-import language.higherKinds
 import language.postfixOps
 
 trait StreamProcess[F[_],O] {
@@ -69,7 +67,7 @@ trait StreamProcess[F[_],O] {
     p2 match {
       case Halt(e) => this.kill onHalt { e2 => Halt(e) ++ Halt(e2) }
       case Emit(h, t) => Emit(h, this |> t)
-      case Await(req,recv) => this match {
+      case Await(_,recv) => this match {
         case Halt(err) => Halt(err) |> recv(Left(err))
         case Emit(h,t) => t |> Try(recv(Right(h)))
         case Await(req0,recv0) => await(req0)(recv0 andThen (_ |> p2))
@@ -81,16 +79,16 @@ trait StreamProcess[F[_],O] {
 
   @annotation.tailrec
   final def kill[O2]: StreamProcess[F,O2] = this match {
-    case Await(req,recv) => recv(Left(Kill)).drain.onHalt {
+    case Await(_,recv) => recv(Left(Kill)).drain.onHalt {
       case Kill => Halt(End) // we convert the `Kill` exception back to normal termination
       case e => Halt(e)
     }
     case Halt(e) => Halt(e)
-    case Emit(h, t) => t.kill
+    case Emit(_, t) => t.kill
   }
   final def drain[O2]: StreamProcess[F,O2] = this match {
     case Halt(e) => Halt(e)
-    case Emit(h, t) => t.drain
+    case Emit(_, t) => t.drain
     case Await(req,recv) => Await(req, recv andThen (_.drain))
   }
 
@@ -99,13 +97,13 @@ trait StreamProcess[F[_],O] {
       case Halt(e) => this.kill onComplete p2.kill onComplete Halt(e)
       case Emit(h,t) => Emit(h, (this tee p2)(t))
       case Await(side, recv) => side.get match {
-        case Left(isO) => this match {
+        case Left(_) => this match {
           case Halt(e) => p2.kill onComplete Halt(e)
           case Emit(o,ot) => (ot tee p2)(Try(recv(Right(o))))
           case Await(reqL, recvL) =>
             await(reqL)(recvL andThen (this2 => this2.tee(p2)(t)))
         }
-        case Right(isO2) => p2 match {
+        case Right(_) => p2 match {
           case Halt(e) => this.kill onComplete Halt(e)
           case Emit(o2,ot) => (this tee ot)(Try(recv(Right(o2))))
           case Await(reqR, recvR) =>

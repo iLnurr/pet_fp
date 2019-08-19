@@ -4,7 +4,6 @@ import com.iserba.fp.parFIO
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import scala.language.{higherKinds, implicitConversions}
 import Helper._
 
 object IOTest extends App {

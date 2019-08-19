@@ -1,6 +1,5 @@
 package com.iserba.fp.utils
 
-import scala.language.{higherKinds, implicitConversions}
 import Monad._
 
 trait Par[F[_]] extends MonadCatch[F] {

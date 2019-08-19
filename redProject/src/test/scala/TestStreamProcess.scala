@@ -1,7 +1,6 @@
 package test
 
 import com.iserba.fp.utils.StreamProcessHelper._
-import com.iserba.fp.{parFIO, _}
 import com.iserba.fp.utils.Monad.MonadCatch
 import com.iserba.fp.utils.Free._
 import com.iserba.fp.utils.{Free, StreamProcess}
@@ -11,7 +10,7 @@ import scala.concurrent.duration.Duration
 import scala.util.Random
 
 object TestStreamProcess extends App {
-  import parFIO._
+  import com.iserba.fp.parFIO._
   implicit val optMC: MonadCatch[Option] = new MonadCatch[({type f[a] = Option[a]})#f] {
     override def attempt[A](a: Option[A]): Option[Either[Throwable, A]] = a.map{v =>
       Right(v)

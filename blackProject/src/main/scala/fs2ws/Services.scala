@@ -53,25 +53,27 @@ object Services {
       Tables.list.map(seq => TableList(seq))
     case AddTableReq(after_id, table, _) =>
       Tables.add(table).flatMap {
-        case Left(value) =>
+        case Left(_) =>
           IO.pure(UpdateTableFailResponse(after_id))
         case Right(inserted) =>
           IO.pure(UpdateTableResponse(inserted))
       }
     case UpdateTableReq(table, _) =>
       Tables.update(table).flatMap {
-        case Left(value) =>
+        case Left(_) =>
           IO.pure(UpdateTableFailResponse(table.id.getOrElse(-1L)))
-        case Right(value) =>
+        case Right(_) =>
           IO.pure(UpdateTableResponse(table))
       }
     case RemoveTableReq(id, _) =>
       Tables.remove(id).flatMap {
-        case Left(value) =>
+        case Left(_) =>
           IO.pure(RemoveTableFailResponse(id))
-        case Right(value) =>
+        case Right(_) =>
           IO.pure(RemoveTableResponse(id))
       }
+    case other =>
+      IO.raiseError(new RuntimeException(s"Services.table: Do not support msg: $other"))
   }
 }
 abstract class DB[F[_],T <: DBEntity](implicit F: Sync[F]) {

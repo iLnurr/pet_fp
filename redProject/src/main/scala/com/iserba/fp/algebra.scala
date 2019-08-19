@@ -4,8 +4,6 @@ import com.iserba.fp.utils.{Monad, StreamProcess}
 import com.iserba.fp.utils.StreamProcess.Emit
 import com.iserba.fp.utils.StreamProcessHelper._
 
-import scala.language.{higherKinds, implicitConversions}
-
 object algebra {
   trait Model {
     def id: Option[Long]

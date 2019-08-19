@@ -1,6 +1,5 @@
 package com.iserba.fp.utils
 
-import scala.language.{higherKinds, implicitConversions}
 import Free._
 
 sealed trait Free[F[_],A] { self =>
@@ -26,12 +25,13 @@ object Free {
       fa.flatMap(f)
   }
 
+  import scala.reflect.{ClassTag, classTag}
   // @annotation.tailrec
-  def runTrampoline[A](a: Free[Function0,A]): A = a match {
+  def runTrampoline[A: ClassTag](a: Free[Function0,A]): A = a match {
     case Return(value) => value
     case Suspend(s) => s()
     case FlatMap(x,f) => x match {
-      case Return(aa:A) => runTrampoline(f(aa))
+      case Return(aa:A) if classTag[A].runtimeClass.isInstance(aa) => runTrampoline(f(aa))
       case Suspend(s) => runTrampoline(f(s()))
       case FlatMap(s, ff) => runTrampoline(s.flatMap(ff(_).flatMap(f)))
     }
@@ -75,12 +75,12 @@ object Free {
     }
 
 
-  def translate[F[_],G[_],A](f: Free[F,A])(fg: F ~> G): Free[G,A] = {
-    type FreeG[A] = Free[G,A]
-    val tr = new Translate[F,FreeG] {
-      override def apply[A](f: F[A]): Free[G,A] = Suspend(fg(f))
-    }
-
-    runFree(f)(tr)(freeMonad[G])
-  }
+//  def translate[F[_],G[_],A](f: Free[F,A])(fg: F ~> G): Free[G,A] = {
+//    type FreeG[A] = Free[G,A]
+//    val tr = new Translate[F,FreeG] {
+//      override def apply[A](f: F[A]): Free[G,A] = Suspend(fg(f))
+//    }
+//
+//    runFree(f)(tr)(freeMonad[G])
+//  }
 }

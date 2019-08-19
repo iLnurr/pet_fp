@@ -1,9 +1,9 @@
 package fs2ws
-import io.circe._
-import io.circe.generic.auto._
-import io.circe.parser._
-import io.circe.syntax._
-import io.circe.generic.extras.auto._
+//import io.circe._
+//import io.circe.generic.auto._
+//import io.circe.parser._
+//import io.circe.syntax._
+//import io.circe.generic.extras.auto._
 import io.circe.generic.extras.Configuration
 
 

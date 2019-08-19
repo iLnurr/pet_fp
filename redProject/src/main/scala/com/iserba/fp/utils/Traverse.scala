@@ -1,7 +1,5 @@
 package com.iserba.fp.utils
 
-import scala.language.{higherKinds, implicitConversions}
-
 trait Traverse[F[_]] extends Functor[F] { self =>
   type Id[A] = A
   val idMonad: Monad[Id] = new Monad[Id] {

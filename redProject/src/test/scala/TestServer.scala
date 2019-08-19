@@ -10,7 +10,6 @@ import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.language.{higherKinds, implicitConversions}
 
 object Test extends App {
   import parFIO._

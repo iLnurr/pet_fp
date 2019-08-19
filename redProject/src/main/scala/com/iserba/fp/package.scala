@@ -4,7 +4,6 @@ import com.iserba.fp.utils.{IOWrap, Monad}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.language.higherKinds
 
 package object fp {
   type ParF[+A] = Future[A]
