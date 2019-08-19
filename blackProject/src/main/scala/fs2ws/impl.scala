@@ -29,7 +29,7 @@ class FS2ServerImpl(implicit
   override def startWS(port: Int): IO[Unit] =
     FS2Server
       .start[IO](
-        FS2Server.dummyWsPipe(processEvent)
+        FS2Server.dummyWsPipe(processEvent) // TODO Stream[F, String] => Stream[F, String] ==> Stream[F, Message] => Stream[F, Message]: privileged commands, subscribe tables, keep clients states, broadcast to them
       )
       .compile
       .drain
