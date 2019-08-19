@@ -37,6 +37,9 @@ object Services {
       IO.raiseError(new RuntimeException(s"Can't handle $msg"))
   }
 
+  def tableList: IO[TableList] =
+    Tables.list.map(seq => TableList(seq))
+
   private def auth: AuthReq => IO[Message] = ar =>
     Users.getByName(ar.username).map {
       case Some(user) =>
@@ -50,7 +53,9 @@ object Services {
 
   private def tables: TableMsg => IO[TableMsg] = {
     case SubscribeTables(_) =>
-      Tables.list.map(seq => TableList(seq))
+      tableList // TODO
+    case _:UnsubscribeTables =>
+      tableList // TODO
     case AddTableReq(after_id, table, _) =>
       Tables.add(table).flatMap {
         case Left(_) =>
