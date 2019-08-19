@@ -41,10 +41,9 @@ object FS2Server {
                    (implicit conc: Concurrent[F], timer: Timer[F]): Stream[F, HttpResponse[F]] = {
     request.path match {
       case Path(true, false, Seq("ws_api")) =>
-        val stream = websocket.server[F,String,String](wsPipe, 1.second)(request, body)
-        stream.onFinalize(conc.delay{
-          println(s"WS DONE")
-        })
+        websocket
+          .server[F,String,String](wsPipe, 1.second)(request, body)
+          .onFinalize(conc.delay{println(s"WS DONE")})
       case other =>
         println(s"Client try to connect to path=${other.segments.mkString("/","/","")}. \nBad request=$request")
         Stream.empty
@@ -54,7 +53,7 @@ object FS2Server {
   def start[F[_]: ConcurrentEffect: Timer](wsPipe: Pipe[F, Frame[String], Frame[String]]): Stream[F, Unit] =
     http.server[F](new InetSocketAddress("127.0.0.1", 9000))(service(_, _)(wsPipe))
 
-  def frameConvert[F[_]](func: String => F[String])(implicit F: Functor[F]): Frame[String] => F[Frame[String]] = { frame =>
+  def frameConvert[F[_],I,O](func: I => F[O])(implicit F: Functor[F]): Frame[I] => F[Frame[O]] = { frame =>
     println(s"Server got request: ${frame.a}")
     func(frame.a).map{resp =>
       println(s"Server response: $resp")

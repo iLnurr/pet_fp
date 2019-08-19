@@ -24,7 +24,7 @@ object JsonSerDeTest extends App {
   println(parse(json))
   println(parse(json).right.get.as[Msg])
 
-  import JsonSerDe._
+  import fs2ws.impl.JsonSerDe._
   println(incomingMessageDecoder.fromJson(json).unsafeRunSync())
   println(responseEncoder.toJson(AuthSuccessResp("admin")).unsafeRunSync())
 

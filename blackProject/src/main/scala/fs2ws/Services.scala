@@ -10,7 +10,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
 object Services {
-  def handle: Message => IO[Message] = {
+  def handleReq: Message => IO[Message] = {
     case msg: AuthMsg => msg match {
       case ar: AuthReq =>
         auth(ar)
@@ -73,7 +73,7 @@ object Services {
           IO.pure(RemoveTableResponse(id))
       }
     case other =>
-      IO.raiseError(new RuntimeException(s"Services.table: Do not support msg: $other"))
+      IO.raiseError(new RuntimeException(s"Bad request: $other"))
   }
 }
 abstract class DB[F[_],T <: DBEntity](implicit F: Sync[F]) {

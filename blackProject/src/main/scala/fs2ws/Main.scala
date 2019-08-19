@@ -1,14 +1,15 @@
 package fs2ws
 
 import cats.effect.{ConcurrentEffect, ExitCode, IO, IOApp}
-import JsonSerDe._
+import fs2ws.impl.JsonSerDe._
 import cats.syntax.flatMap._
+import fs2ws.impl.{MessageProcessorImpl, ServerImpl}
 
 object Main extends IOApp {
   implicit val ce: ConcurrentEffect[IO] = IO.ioConcurrentEffect
-  implicit val mp = new MessageProcessorAlgebraImpl()
+  implicit val mp = new MessageProcessorImpl()
   override def run(args: List[String]): IO[ExitCode] = {
-    (new FS2ServerImpl().startWS(9000)
+    (new ServerImpl().startWS(9000)
       >> IO.pure(ExitCode.Success))
       .handleErrorWith(ex =>
         IO {
