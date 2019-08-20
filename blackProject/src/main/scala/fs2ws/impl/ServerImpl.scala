@@ -1,15 +1,13 @@
 package fs2ws.impl
 
-import cats.effect.{ConcurrentEffect, IO}
+import cats.effect.{ConcurrentEffect, IO, Timer}
 import fs2.Stream
 import fs2ws.Domain._
 import fs2ws._
 import fs2ws.impl.State._
 
-import scala.concurrent.ExecutionContext
-
 class ServerImpl(val core: MsgStreamPipe[IO] => Stream[IO,Unit])
-                (implicit ce: ConcurrentEffect[IO])
+                (implicit ce: ConcurrentEffect[IO], timer: Timer[IO])
   extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
   val clients = ConnectedClients.create[IO].unsafeRunSync()
   override def handler: Message => IO[Message] =
@@ -57,7 +55,6 @@ class ServerImpl(val core: MsgStreamPipe[IO] => Stream[IO,Unit])
       }
 
   import scala.concurrent.duration._
-  implicit val timer = IO.timer(ExecutionContext.global)
   private def push(clients: Clients[IO], client: Client[IO]): Stream[IO, Message] = {
     val pushStream = Stream
       .awakeEvery[IO](5.seconds)

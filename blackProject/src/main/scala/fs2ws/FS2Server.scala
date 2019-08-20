@@ -48,5 +48,6 @@ object FS2Server {
   }
 
   def start[F[_]: ConcurrentEffect: Timer](wsPipe: Pipe[F, Frame[String], Frame[String]]): Stream[F, Unit] =
+    Stream.emit[F,Unit](println(s"Start server on port 9000")) ++
     http.server[F](new InetSocketAddress("127.0.0.1", 9000))(service(_, _)(wsPipe))
 }
