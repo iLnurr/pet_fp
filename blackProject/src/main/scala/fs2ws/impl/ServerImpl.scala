@@ -46,9 +46,8 @@ class ServerImpl(val core: MsgStreamPipe[IO] => Stream[IO,Unit])
                 .flatMap{ case (msg,updated) =>
                   clients.updateClients(updated,msg) // update by response
                 })
-              .flatMap{ frame =>
-                val (msg, updatedClient) = frame
-                Stream.emits[IO, Message](msg :: updatedClient.take.map(msg => msg))
+              .flatMap{ case (msg,updated) =>
+                Stream.emits[IO, Message](msg :: updated.take.map(msg => msg))
               }
           }
       }

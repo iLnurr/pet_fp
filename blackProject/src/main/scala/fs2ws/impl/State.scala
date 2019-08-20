@@ -62,15 +62,13 @@ object State {
       }
     }
     def broadcast(message: Message, filterF: Client[F] => Boolean): F[Unit] = {
-      ref.update { old =>
-        old
-          .filter{ case (_, client) =>
-            filterF(client)}
-          .map{ case (uuid, client) =>
-            client.add(message)
-            (uuid, client)
-          }
-      }
+      ref
+        .get
+        .map(_
+          .values.toList
+          .filter(filterF)
+          .foreach(_.add(message))
+        )
     }
     def updateClients(client: Client[F], message: Message): F[(Message, Client[F])] =
       get(client.id)
