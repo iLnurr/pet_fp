@@ -60,7 +60,4 @@ object FS2Server {
       Text(resp)
     }
   }
-
-  def dummyWsPipe[F[_]: Functor](convertF: String => F[String]): Pipe[F, Frame[String], Frame[String]] = input =>
-    input.evalMap(frameConvert(convertF))
 }

@@ -40,7 +40,7 @@ object JsonSerDe {
       }
   }
   implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("type")
-  implicit def responseEncoder: JsonEncoder[IO, Message] = new JsonEncoder[IO, Message] {
+  implicit def encoder: JsonEncoder[IO, Message] = new JsonEncoder[IO, Message] {
     override def toJson(value: Message): IO[String] =
       IO.pure(value.asJson.noSpaces)
   }
