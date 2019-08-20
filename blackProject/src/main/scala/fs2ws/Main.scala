@@ -8,7 +8,7 @@ import fs2ws.impl.ServerImpl
 object Main extends IOApp {
   implicit val ce: ConcurrentEffect[IO] = IO.ioConcurrentEffect
   override def run(args: List[String]): IO[ExitCode] = {
-    (new ServerImpl(startMsgStream(encoder.toJson, incomingMessageDecoder.fromJson, _)).start(9000)
+    (new ServerImpl(startMsgStream(encoder.toJson, incomingMessageDecoder.fromJson, _)).start()
       >> IO.pure(ExitCode.Success))
       .handleErrorWith(ex =>
         IO {
