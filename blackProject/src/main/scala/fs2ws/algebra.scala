@@ -23,9 +23,9 @@ trait Clients[F[_]] {
 }
 
 @finalAlg
-trait ServerAlgebra[F[_],I,O,StreamPipe] {
+trait ServerAlgebra[F[_],I,O,StreamPipe[_[_]]] {
   def handler: I => F[O]
   def clients: F[Clients[F]]
   def start(port: Int): F[Unit]
-  def pipe: StreamPipe
+  def pipe: StreamPipe[F]
 }

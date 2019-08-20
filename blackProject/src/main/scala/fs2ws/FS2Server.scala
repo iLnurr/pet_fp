@@ -4,9 +4,7 @@ import java.net.InetSocketAddress
 import java.nio.channels.AsynchronousChannelGroup
 import java.util.concurrent.Executors
 
-import cats.Functor
 import cats.effect.{Concurrent, ConcurrentEffect, Timer}
-import cats.implicits._
 import fs2._
 import scodec.Attempt.{Failure, Successful}
 import scodec.bits.ByteVector
@@ -14,7 +12,6 @@ import scodec.{Codec, Err}
 import spinoco.fs2.http
 import spinoco.fs2.http._
 import spinoco.fs2.http.websocket.Frame
-import spinoco.fs2.http.websocket.Frame.Text
 import spinoco.protocol.http.Uri.Path
 import spinoco.protocol.http._
 
@@ -52,12 +49,4 @@ object FS2Server {
 
   def start[F[_]: ConcurrentEffect: Timer](wsPipe: Pipe[F, Frame[String], Frame[String]]): Stream[F, Unit] =
     http.server[F](new InetSocketAddress("127.0.0.1", 9000))(service(_, _)(wsPipe))
-
-  def frameConvert[F[_],I,O](func: I => F[O])(implicit F: Functor[F]): Frame[I] => F[Frame[O]] = { frame =>
-    println(s"Server got request: ${frame.a}")
-    func(frame.a).map{resp =>
-      println(s"Server response: $resp")
-      Text(resp)
-    }
-  }
 }
