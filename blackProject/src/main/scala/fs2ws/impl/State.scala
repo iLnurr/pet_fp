@@ -18,12 +18,10 @@ object State {
     private val msgQueue = ListBuffer[Message]() // TODO
     def add(message: Message): Unit = // TODO
     {
-      println(s"Client: Add $message")
+      println(s"Client $id: Add $message")
       msgQueue.append(message)
     }
-    def take: List[Message] = // TODO
-    {
-      println(s"Client: Take msgs=${msgQueue.mkString("\n")} \n from client:${this}")
+    def take: List[Message] = {
       val result = msgQueue.toList
       msgQueue.clear()
       result
@@ -64,11 +62,11 @@ object State {
     def broadcast(message: Message, filterF: Client[F] => Boolean): F[Unit] = {
       ref
         .get
-        .map(_
-          .values.toList
-          .filter(filterF)
-          .foreach(_.add(message))
-        )
+        .map {all =>
+          val filtered = all.values.toList.filter(filterF)
+          println(s"Broadcast $message to clients ${filtered}")
+          filtered.foreach(_.add(message))
+        }
     }
     def updateClients(client: Client[F], message: Message): F[(Message, Client[F])] =
       get(client.id)
@@ -78,7 +76,7 @@ object State {
             update(refClient.updateState(message))
               .map(updatedClient => (message, updatedClient))
           case None =>
-            println(s"ConnectedClients: Client not found in ref use incoming $client")
+            println(s"ConnectedClients: Client not found in ref use $client")
             update(client.updateState(message))
               .map(updatedClient => (message, updatedClient))
         }

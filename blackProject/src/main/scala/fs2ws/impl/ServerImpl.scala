@@ -6,10 +6,12 @@ import fs2ws.Domain._
 import fs2ws._
 import fs2ws.impl.State._
 
+import scala.concurrent.ExecutionContext
+
 class ServerImpl(val core: MsgStreamPipe[IO] => Stream[IO,Unit])
                 (implicit ce: ConcurrentEffect[IO])
   extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
-  val clients: IO[Clients[IO]] = ConnectedClients.create[IO]
+  val clients = ConnectedClients.create[IO].unsafeRunSync()
   override def handler: Message => IO[Message] =
     Services.handleReq
   override def start(): IO[Unit] =
@@ -20,12 +22,12 @@ class ServerImpl(val core: MsgStreamPipe[IO] => Stream[IO,Unit])
 
   override def pipe: MsgStreamPipe[IO] = input =>
     Stream
-      .eval(clients)
+      .eval(IO.pure(clients))
       .flatMap{ clients =>
         Stream
           .bracket(clients.register(Client()))(c => clients.unregister(c))
           .flatMap{client =>
-            input.evalMap(in =>
+            val inputStream = input.evalMap(in =>
               clients.updateClients(client,in) // update by incoming
                 .flatMap { case (message, updated) => message match {
                   case commands: PrivilegedCommands =>
@@ -46,9 +48,35 @@ class ServerImpl(val core: MsgStreamPipe[IO] => Stream[IO,Unit])
                 .flatMap{ case (msg,updated) =>
                   clients.updateClients(updated,msg) // update by response
                 })
-              .flatMap{ case (msg,updated) =>
-                Stream.emits[IO, Message](msg :: updated.take.map(msg => msg))
+              .map{ case (msg,_) =>
+                msg
               }
+
+            inputStream merge push(clients, client)
           }
       }
+
+  import scala.concurrent.duration._
+  implicit val timer = IO.timer(ExecutionContext.global)
+  private def push(clients: Clients[IO], client: Client[IO]): Stream[IO, Message] = {
+    val pushStream = Stream
+      .awakeEvery[IO](5.seconds)
+      .evalMap(_ =>
+        clients.get(client.id).map {
+          case Some(client) =>
+            val l = client.take
+            if (l.nonEmpty) {
+              println(s"Push to client ${client} ${l.mkString(",")}")
+              Stream
+                .emits[IO, Message](l)
+            } else {
+              Stream.empty
+            }
+          case None =>
+            Stream.empty
+        }
+      ).flatten
+
+    pushStream
+  }
 }
