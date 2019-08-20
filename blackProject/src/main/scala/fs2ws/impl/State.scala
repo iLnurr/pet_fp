@@ -42,7 +42,7 @@ object State {
         case AuthSuccessResp(user_type, _) =>
           copy(userType = Some(user_type))
         case _: AuthFailResp =>
-          Client(id)
+          Client(id) // clear username, userType, subscribed info
         case _ =>
           this
       }
@@ -83,7 +83,7 @@ object State {
               .map(updatedClient => (message, updatedClient))
         }
 
-    private def get(id: UUID): F[Option[Client[F]]] =
+    def get(id: UUID): F[Option[Client[F]]] =
       ref.get.map(_.get(id))
     private def update(toUpdate: Client[F]): F[Client[F]] =
       ref.modify{old =>

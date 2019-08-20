@@ -52,6 +52,7 @@ object Domain {
   case class UpdateTableFailResponse(id: Long, $type: String = "update_failed") extends TableMsg
   case class RemoveTableFailResponse(id: Long, $type: String = "removal_failed") extends TableMsg
   case class AddTableResponse(after_id: Long, table: Table, $type: String = "table_added") extends TableMsg
+  case class AddTableFailResponse(after_id: Long, $type: String = "add_failed") extends TableMsg
   case class RemoveTableResponse(id: Long, $type: String = "table_removed") extends TableMsg
   case class UpdateTableResponse(table: Table, $type: String = "table_updated") extends TableMsg
 

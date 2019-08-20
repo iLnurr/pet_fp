@@ -59,9 +59,9 @@ object Services {
     case AddTableReq(after_id, table, _) =>
       Tables.add(table).flatMap {
         case Left(_) =>
-          IO.pure(UpdateTableFailResponse(after_id))
+          IO.pure(AddTableFailResponse(after_id))
         case Right(inserted) =>
-          IO.pure(UpdateTableResponse(inserted))
+          IO.pure(AddTableResponse(after_id,inserted))
       }
     case UpdateTableReq(table, _) =>
       Tables.update(table).flatMap {
