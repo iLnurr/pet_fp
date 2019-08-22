@@ -1,11 +1,11 @@
 package ch1
 
-import ch1.domain.Cat
-import impl.catPrintable
-import PrintableSyntax._
+import ch1.algebra.PrintableSyntax._
+import ch1.domain._
+import ch1.impl._
 
 object main extends App {
-  import Printable._
+  import ch1.algebra.Printable._
   val cat = Cat("c", 1, "red")
 
   print(cat)
@@ -45,4 +45,22 @@ object main extends App {
   cat =!= cat2
   Option(cat) =!= Option.empty[Cat]
   Option(cat) =!= Option(cat2)
+
+  import cats.syntax.functor._
+//  Branch(Leaf(10), Leaf(20)).map(_ * 2)
+  Tree.branch(Tree.leaf(10), Tree.leaf(20)).map(_ * 2)
+
+  format(Box("hello world"))
+
+  import ch1.algebra.Codec._
+  import ch1.algebra.CodecSyntax._
+  encode(123.4)
+  123.4.encode
+  // res0: String = 123.4
+  decode[Double]("123.4")
+  // res1: Double = 123.4
+  encode(Box(123.4))
+  // res2: String = 123.4
+  decode[Box[Double]]("123.4")
+  // res3: Box[Double] = Box(123.4)
 }
