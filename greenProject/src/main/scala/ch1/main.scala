@@ -63,4 +63,19 @@ object main extends App {
   // res2: String = 123.4
   decode[Box[Double]]("123.4")
   // res3: Box[Double] = Box(123.4)
+
+  //check enabled "-Ypartial-unification"
+  import cats.instances.function._ // for Functor
+  import cats.syntax.functor._     // for map
+  val func1: Int => Double = (x: Int)    => x.toDouble
+  val func2: Double => Double = (y: Double) => y * 2
+  val func3: Int => Double = func1.map(func2)
+
+  import cats.syntax.contravariant._ // for contramap
+  // contramap == prepending: (A => X contramap B => A) --> B => X
+  //  val func3c: Double => Int = func2.contramap(func1) compiler error
+  type <=[B, A] = A => B
+  type F[A] = Double <= A
+  val func2b: Double <= Double = func2
+  val func3c: Double <= Int = func2b.contramap(func1)
 }
