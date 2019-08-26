@@ -78,4 +78,43 @@ object main extends App {
   type F[A] = Double <= A
   val func2b: Double <= Double = func2
   val func3c: Double <= Int = func2b.contramap(func1)
+
+  //4.4 error handling
+  // Choose error-handling behaviour based on type:
+  import cats.syntax.either._
+
+  val result1: LoginResult = User("dave", "passw0rd").asRight
+  // result1: LoginResult = Right(User(dave,passw0rd))
+  val result2: LoginResult = UserNotFound("dave").asLeft
+  // result2: LoginResult = Left(UserNotFound(dave))
+  result1.fold(handleError, println)
+  // User(dave,passw0rd)
+  result2.fold(handleError, println)
+  // User not found: dave
+
+  //4.5
+  val success = monadError.pure(42)
+  // success: ErrorOr[Int] = Right(42)
+  val failure = monadError.raiseError("Badness")
+  // failure: ErrorOr[Nothing] = Left(Badness)
+  monadError.handleError(failure) {
+    case "Badness" =>
+      monadError.pure("It's ok")
+    case _ =>
+      monadError.raiseError("It's not ok")
+  }
+  // res2: ErrorOr[ErrorOr[String]] = Right(Right(It's ok))
+  monadError.ensure(success)("Number too low!")(_ > 1000)
+  // res3: ErrorOr[Int] = Left(Number too low!)
+
+  import cats.syntax.applicative._ // for pure
+  import cats.syntax.applicativeError._ // for raiseError etc
+  import cats.syntax.monadError._ // for ensure
+  import cats.instances.either._
+  val success2 = 42.pure[ErrorOr]
+  // success: ErrorOr[Int] = Right(42)
+  val failure2 = "Badness".raiseError[ErrorOr, Int]
+  // failure: ErrorOr[Int] = Left(Badness)
+  success2.ensure("Number to low!")(_ > 1000)
+  // res4: Either[String,Int] = Left(Number to low!)
 }
