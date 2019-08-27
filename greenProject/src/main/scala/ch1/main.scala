@@ -1,5 +1,7 @@
 package ch1
 
+import cats.{Eval, Id}
+import cats.data.{Writer, WriterT}
 import ch1.algebra.PrintableSyntax._
 import ch1.domain._
 import ch1.impl._
@@ -65,7 +67,7 @@ object main extends App {
   // res3: Box[Double] = Box(123.4)
 
   //check enabled "-Ypartial-unification"
-  import cats.instances.function._ // for Functor
+  import cats.instances.function._
   import cats.syntax.functor._     // for map
   val func1: Int => Double = (x: Int)    => x.toDouble
   val func2: Double => Double = (y: Double) => y * 2
@@ -107,14 +109,92 @@ object main extends App {
   monadError.ensure(success)("Number too low!")(_ > 1000)
   // res3: ErrorOr[Int] = Left(Number too low!)
 
-  import cats.syntax.applicative._ // for pure
-  import cats.syntax.applicativeError._ // for raiseError etc
-  import cats.syntax.monadError._ // for ensure
   import cats.instances.either._
+  import cats.syntax.applicative._
+  import cats.syntax.applicativeError._
   val success2 = 42.pure[ErrorOr]
   // success: ErrorOr[Int] = Right(42)
   val failure2 = "Badness".raiseError[ErrorOr, Int]
   // failure: ErrorOr[Int] = Left(Badness)
   success2.ensure("Number to low!")(_ > 1000)
   // res4: Either[String,Int] = Left(Number to low!)
+
+  //Eval
+  /** The naive implementati􏰀on of foldRight below is not stack safe. Make it so using Eval: */
+  def foldRightNotStackSafe[A, B](as: List[A], acc: B)(fn: (A, B) => B): B = as match {
+    case head :: tail =>
+      fn(head, foldRightNotStackSafe(tail, acc)(fn))
+    case Nil =>
+      acc
+  }
+  def foldRightEval[A, B](as: List[A], acc: B)(fn: (A, B) => B): Eval[B] = as match {
+    case Nil =>
+      Eval.now(acc)
+    case head :: tail =>
+      Eval
+        .defer(foldRightEval(tail, acc)(fn))
+        .map(fn(head,_))
+  }
+  def foldRight[A, B](as: List[A], acc: B)(fn: (A, B) => B): B =
+    foldRightEval(as,acc)(fn).value
+
+  println(foldRight((1 to 100000).toList, 0L)(_ + _))
+
+  //Writer
+  import cats.instances.vector._   // for Monoid
+  import cats.syntax.applicative._ // for pure
+  type Writer[W, A] = WriterT[Id, W, A]
+  type Logged[A] = Writer[Vector[String], A]
+
+  import cats.syntax.writer._ // for tell
+  val res = Vector("msg1", "msg2", "msg3").tell
+  val rr = res.run
+  println(rr)
+
+  import cats.syntax.writer._ // for writer
+  val a = Writer(Vector("msg1", "msg2", "msg3"), 123)
+  val b = 123.writer(Vector("msg1", "msg2", "msg3"))
+
+  val aResult: Int =
+    a.value
+  // aResult: Int = 123
+  val aLog: Vector[String] =
+    a.written
+  // aLog: Vector[String] = Vector(msg1, msg2, msg3)
+  val (log, result) = b.run
+  // log: scala.collection.immutable.Vector[String] = Vector(msg1, msg2, msg3)
+  // result: Int = 123
+
+  def slowly[A](body: => A) =
+    try body finally Thread.sleep(100)
+  def factorial(n: Int): Int = {
+    val ans = slowly(if(n == 0) 1 else n * factorial(n - 1))
+    println(s"fact $n $ans")
+    ans
+  }
+
+  /** Rewrite factorial so it captures the log messages in a Writer.
+    * Demonstrate that this allows us to reliably separate the logs for concurrent computations.
+    * */
+  import scala.concurrent._
+  import scala.concurrent.ExecutionContext.Implicits.global
+  import scala.concurrent.duration._
+  Await.result(Future.sequence(Vector(
+    Future(factorial(3)),
+    Future(factorial(3))
+  )), 5.seconds)
+
+  def factorialWriter(n: Int): Logged[Int] = {
+    for {
+      ans <- slowly(if(n == 0) 1.pure[Logged] else factorialWriter(n - 1).map(_ * n))
+      _ <- Vector(s"fact $n $ans").tell
+    } yield {
+      ans
+    }
+  }
+
+  Await.result(Future.sequence(Vector(
+    Future(factorialWriter(3).run.map(t => println(t._1))),
+    Future(factorialWriter(3).run.map(t => println(t._1)))
+  )), 5.seconds)
 }
