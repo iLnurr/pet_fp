@@ -276,4 +276,14 @@ object main extends App {
     evalAll(input.split(" ").toList).runA(Nil).value
 
   assert(evalInput("1 2 + 3 4 + *") == 21)
+
+  // tree monad
+  import cats.syntax.functor._ // for map
+  import cats.syntax.flatMap._ // for flatMap
+  import Tree._
+  for {
+    a <- branch(leaf(100), leaf(200))
+    b <- branch(leaf(a - 10), leaf(a + 10))
+    c <- branch(leaf(b - 1), leaf(b + 1))
+  } yield c
 }

@@ -1,8 +1,10 @@
 package ch1
 
-import cats.Functor
+import cats.{Functor, Monad}
 import ch1.algebra._
 import ch1.domain._
+
+import scala.annotation.tailrec
 
 object impl {
   implicit val stringPrintable: Printable[String] =
@@ -63,4 +65,48 @@ object impl {
     stringCodec.imap(_.toDouble, _.toString)
   implicit def boxCodec[A](implicit c: Codec[A]): Codec[Box[A]] =
     c.imap(Box.apply, _.value)
+
+  implicit val treeMonad: Monad[Tree] = new Monad[Tree] {
+    override def pure[A](x: A): Tree[A] =
+      Tree.leaf(x)
+
+    override def flatMap[A, B](fa: Tree[A])(f: A => Tree[B]): Tree[B] = fa match {
+      case Branch(left, right) =>
+        Tree.branch(flatMap(left)(f), flatMap(right)(f))
+      case Leaf(value) =>
+        f(value)
+    }
+
+    // not stack safe
+//    override def tailRecM[A, B](a: A)(f: A => Tree[Either[A, B]]): Tree[B] =
+//      flatMap(f(a)) {
+//        case Left(aa) =>
+//          tailRecM(aa)(f)
+//        case Right(bb) =>
+//          Tree.leaf(bb)
+//      }
+
+    // stack safe from https://stackoverflow.com/questions/44504790/cats-non-tail-recursive-tailrecm-method-for-monads
+    override def tailRecM[A, B](arg: A)
+                      (func: A => Tree[Either[A, B]]): Tree[B] = {
+      @tailrec
+      def loop(open: List[Tree[Either[A, B]]],
+               closed: List[Option[Tree[B]]]): List[Tree[B]] = open match {
+        case Branch(l, r) :: next =>
+          loop(l :: r :: next, None :: closed)
+        case Leaf(Left(value)) :: next =>
+          loop(func(value) :: next, closed)
+        case Leaf(Right(value)) :: next =>
+          loop(next, Some(pure(value)) :: closed)
+        case Nil =>
+          closed.foldLeft(Nil: List[Tree[B]]) { (acc, maybeTree) =>
+            maybeTree.map(_ :: acc).getOrElse {
+              val left :: right :: tail = acc
+              Tree.branch(left, right) :: tail
+            }
+          }
+      }
+      loop(List(func(arg)), Nil).head
+    }
+  }
 }
