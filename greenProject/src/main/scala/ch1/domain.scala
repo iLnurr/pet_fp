@@ -1,5 +1,7 @@
 package ch1
 
+import cats.data.Reader
+
 object domain {
   final case class Cat(name: String, age: Int, color: String)
 
@@ -39,4 +41,33 @@ object domain {
   import cats.instances.either._ // for MonadError
   type ErrorOr[A] = Either[String, A]
   val monadError: MonadError[ErrorOr, String] = MonadError[ErrorOr, String]
+
+  //4.8
+  import cats.syntax.applicative._
+  case class Db(
+                 usernames: Map[Int, String],
+                 passwords: Map[String, String]
+               )
+  type DbReader[T] = Reader[Db, T]
+  object DbReader {
+    def apply[T](function: Db => T): DbReader[T] =
+      Reader[Db,T](db => function(db))
+    def empty[T](t: T): DbReader[T] =
+      t.pure[DbReader]
+  }
+  def findUsername(userId: Int): DbReader[Option[String]] =
+    DbReader(_.usernames.get(userId))
+  def checkPassword(
+                     username: String,
+                     password: String): DbReader[Boolean] =
+    DbReader(_.passwords.get(username).contains(password))
+  def checkLogin(
+                  userId: Int,
+                  password: String): DbReader[Boolean] =
+    findUsername(userId).flatMap {
+      case Some(username) =>
+        checkPassword(username, password)
+      case None =>
+        DbReader.empty(false)
+    }
 }

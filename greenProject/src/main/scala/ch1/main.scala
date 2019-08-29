@@ -197,4 +197,25 @@ object main extends App {
     Future(factorialWriter(3).run.map(t => println(t._1))),
     Future(factorialWriter(3).run.map(t => println(t._1)))
   )), 5.seconds)
+
+  // Reader
+  val users = Map(
+    1 -> "dade",
+    2 -> "kate",
+    3 -> "margo"
+  )
+  val passwords = Map(
+    "dade"  -> "zerocool",
+    "kate"  -> "acidburn",
+    "margo" -> "secret"
+  )
+  val db = Db(users, passwords)
+  val check1 = checkLogin(1, "zerocool").run(db)
+  println(s"check1 $check1")
+  assert(check1)
+  // res10: cats.Id[Boolean] = true
+  val check2 = checkLogin(4, "davinci").run(db)
+  println(s"check2 $check2")
+  assert(!check2)
+  // res11: cats.Id[Boolean] = false
 }
