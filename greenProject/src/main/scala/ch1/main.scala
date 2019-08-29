@@ -218,4 +218,62 @@ object main extends App {
   println(s"check2 $check2")
   assert(!check2)
   // res11: cats.Id[Boolean] = false
+
+  // State
+  import cats.data.State
+  type CalcState[A] = State[List[Int], A]
+  def evalOne(sym: String): CalcState[Int] =
+    State[List[Int], Int] { stack =>
+      sym match {
+        case "+" =>
+          calc(stack, _ + _)
+        case "-" =>
+          calc(stack, _ - _)
+        case "*" =>
+          calc(stack, _ * _)
+        case "/" =>
+          calc(stack, _ / _)
+        case n =>
+          val parsed = n.toInt
+          (parsed :: stack) -> parsed
+      }
+    }
+  private def calc(stack: List[Int], f: (Int, Int) => Int): (List[Int], Int) = stack match {
+    case b :: a :: tail =>
+      val res = f(b,a)
+      (res :: tail) -> res
+    case _ =>
+      sys.error("fail")
+  }
+  val calcProgram1 = for {
+    _   <- evalOne("1")
+    _   <- evalOne("2")
+    ans <- evalOne("+")
+  } yield ans
+  assert(calcProgram1.runA(Nil).value == 3)
+
+  def evalAll(input: List[String]): CalcState[Int] =
+    input.foldLeft(State.pure[List[Int],Int](0)){ case (acc,s) =>
+        for {
+          _ <- acc.get
+          result <- evalOne(s)
+        } yield {
+          result
+        }
+    }
+
+  val calcProgram2 = evalAll(List("1", "2", "+", "3", "*"))
+  assert(calcProgram2.runA(Nil).value == 9)
+
+  val calcProgram3 = for {
+    _   <- evalAll(List("1", "2", "+"))
+    _   <- evalAll(List("3", "4", "+"))
+    ans <- evalOne("*")
+  } yield ans
+  assert(calcProgram3.runA(Nil).value == 21)
+
+  def evalInput(input: String): Int =
+    evalAll(input.split(" ").toList).runA(Nil).value
+
+  assert(evalInput("1 2 + 3 4 + *") == 21)
 }
