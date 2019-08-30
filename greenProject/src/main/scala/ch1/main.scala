@@ -1,7 +1,7 @@
 package ch1
 
+import cats.data.{EitherT, Writer, WriterT}
 import cats.{Eval, Id}
-import cats.data.{Writer, WriterT}
 import ch1.algebra.PrintableSyntax._
 import ch1.domain._
 import ch1.impl._
@@ -141,7 +141,7 @@ object main extends App {
   println(foldRight((1 to 100000).toList, 0L)(_ + _))
 
   //Writer
-  import cats.instances.vector._   // for Monoid
+  import cats.instances.vector._
   import cats.syntax.applicative._ // for pure
   type Writer[W, A] = WriterT[Id, W, A]
   type Logged[A] = Writer[Vector[String], A]
@@ -176,8 +176,8 @@ object main extends App {
   /** Rewrite factorial so it captures the log messages in a Writer.
     * Demonstrate that this allows us to reliably separate the logs for concurrent computations.
     * */
-  import scala.concurrent._
   import scala.concurrent.ExecutionContext.Implicits.global
+  import scala.concurrent._
   import scala.concurrent.duration._
   Await.result(Future.sequence(Vector(
     Future(factorial(3)),
@@ -278,12 +278,55 @@ object main extends App {
   assert(evalInput("1 2 + 3 4 + *") == 21)
 
   // tree monad
-  import cats.syntax.functor._ // for map
-  import cats.syntax.flatMap._ // for flatMap
   import Tree._
+  import cats.syntax.flatMap._
+  import cats.syntax.functor._
   for {
     a <- branch(leaf(100), leaf(200))
     b <- branch(leaf(a - 10), leaf(a + 10))
     c <- branch(leaf(b - 1), leaf(b + 1))
   } yield c
+
+  // monad transformers
+  import cats.instances.future._
+  type Response[A] = EitherT[Future, String, A]
+  val powerLevels = Map(
+    "Jazz"      -> 6,
+    "Bumblebee" -> 8,
+    "Hot Rod"   -> 10
+  )
+
+  def getPowerLevel(autobot: String): Response[Int] =
+    powerLevels.get(autobot) match {
+      case Some(value) =>
+        EitherT.right[String](Future.successful(value))
+      case None =>
+        EitherT.left(Future.successful(s"can't find $autobot"))
+    }
+  def canSpecialMove(ally1: String, ally2: String): Response[Boolean] =
+    for {
+      a1 <- getPowerLevel(ally1)
+      a2 <- getPowerLevel(ally2)
+    } yield {
+      (a1 + a2) > 15
+    }
+
+  def tacticalReport(ally1: String, ally2: String): String =
+    Await.result(
+      canSpecialMove(ally1, ally2)
+        .map(res => if (res) s"$ally1 and $ally2 can special move" else s"$ally1 and $ally2 can't special move").value,
+      1.seconds
+    ) match {
+      case Left(value) =>
+        value
+      case Right(value) =>
+        value
+    }
+
+  tacticalReport("Jazz", "Bumblebee").println()
+  // res28: String = Jazz and Bumblebee need a recharge.
+  tacticalReport("Bumblebee", "Hot Rod").println()
+  // res29: String = Bumblebee and Hot Rod are ready to roll out!
+  tacticalReport("Jazz", "Ironhide").println()
+  // res30: String = Comms error: Ironhide unreachable
 }
