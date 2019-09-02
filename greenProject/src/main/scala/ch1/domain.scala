@@ -1,6 +1,8 @@
 package ch1
 
-import cats.data.Reader
+import cats.data.{Reader, Validated}
+
+import scala.util.{Failure, Success, Try}
 
 object domain {
   final case class Cat(name: String, age: Int, color: String)
@@ -24,8 +26,8 @@ object domain {
   final case class UserNotFound(username: String) extends LoginError
   final case class PasswordIncorrect(username: String) extends LoginError
   case object UnexpectedError extends LoginError
-  case class User(username: String, password: String)
-  type LoginResult = Either[LoginError, User]
+  case class UserLogin(username: String, password: String)
+  type LoginResult = Either[LoginError, UserLogin]
   def handleError(error: LoginError): Unit =
     error match {
       case UserNotFound(u) =>
@@ -70,4 +72,47 @@ object domain {
       case None =>
         DbReader.empty(false)
     }
+
+  // 6.4.4
+  import cats.syntax.validated._
+  import cats.syntax.either._
+
+  case class User(name: String, age: Int)
+  type FormData = Map[String, String]
+  type FailFast[A] = Either[List[String], A]
+  type FailSlow[A] = Validated[List[String], A]
+
+  def readName(m: FormData): FailFast[String] =
+    (m.get("name") match {
+      case Some(value) if value.isEmpty=>
+        List("Name is blank").invalid[String]
+      case Some(name) =>
+        name.valid
+      case None =>
+        List("Name not found").invalid[String]
+    }).toEither
+  def readAge(m: FormData): FailFast[Int] =
+    (m.get("age") match {
+      case Some(value) =>
+        Try(value.toInt) match {
+          case Failure(exception) =>
+            List(exception.getMessage).invalid[Int]
+          case Success(value) if value < 0 =>
+            List(s"Negative age $value").invalid[Int]
+          case Success(value) =>
+            value.valid[List[String]]
+        }
+      case None =>
+        List("Age not found").invalid[Int]
+    }).toEither
+
+  import cats.instances.list._ // for Semigroupal
+  import cats.syntax.apply._   // for mapN
+  def readUser(m: FormData): FailSlow[User] =
+    (
+      readName(m).toValidated,
+      readAge(m).toValidated
+      ).mapN(
+      User.apply
+    )
 }

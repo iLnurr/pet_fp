@@ -85,7 +85,7 @@ object main extends App {
   // Choose error-handling behaviour based on type:
   import cats.syntax.either._
 
-  val result1: LoginResult = User("dave", "passw0rd").asRight
+  val result1: LoginResult = UserLogin("dave", "passw0rd").asRight
   // result1: LoginResult = Right(User(dave,passw0rd))
   val result2: LoginResult = UserNotFound("dave").asLeft
   // result2: LoginResult = Left(UserNotFound(dave))
@@ -329,4 +329,10 @@ object main extends App {
   // res29: String = Bumblebee and Hot Rod are ready to roll out!
   tacticalReport("Jazz", "Ironhide").println()
   // res30: String = Comms error: Ironhide unreachable
+
+  // 6.4.4
+  readUser(Map("name" -> "Dave", "age" -> "37")).println()
+  // res48: FailSlow[User] = Valid(User(Dave,37))
+  readUser(Map("age" -> "-1")).println()
+  // res49: FailSlow[User] = Invalid(List(name field not specified, age must be non-negative))
 }

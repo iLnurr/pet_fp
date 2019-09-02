@@ -109,4 +109,18 @@ object impl {
       loop(List(func(arg)), Nil).head
     }
   }
+
+  // Implement product in terms of flatMap:
+  import cats.Monad
+  import cats.syntax.flatMap._ // for flatMap
+  import cats.syntax.functor._ // for map
+  def product11[M[_]: Monad, A, B](x: M[A], y: M[B]): M[(A, B)] =
+    Monad[M].flatMap(x)(a => Monad[M].map(y)(b => (a,b)))
+  def product12[M[_]: Monad, A, B](x: M[A], y: M[B]): M[(A, B)] =
+    x.flatMap(a => y.map(b => (a,b)))
+  def product13[M[_]: Monad, A, B](x: M[A], y: M[B]): M[(A, B)] =
+    for {
+      a <- x
+      b <- y
+    } yield (a,b)
 }
