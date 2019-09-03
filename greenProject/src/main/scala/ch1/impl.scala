@@ -123,4 +123,25 @@ object impl {
       a <- x
       b <- y
     } yield (a,b)
+
+  // 7.1.2
+  //Try using foldLeft and foldRight with an empty list as the accumulator and :: as the binary operator.
+  // What results do you get in each case?
+  def fl[T](l: List[T]): List[T] =
+    l.foldLeft(List.empty[T])((acc,t) => t :: acc)
+  def fr[T](l: List[T]): List[T] =
+    l.foldRight(List.empty[T])(_ :: _)
+  //foldLeft and foldRight are very general methods.
+  // We can use them to implement many of the other high-level sequence opera􏰀ons we know.
+  // Prove this to yourself by implemen􏰀ng subs􏰀tutes for List's
+  // map, flatMap, filter, and sum methods
+  // in terms of foldRight.
+  def map[A,B](l: List[A])(f: A => B): List[B] =
+    l.foldRight(List.empty[B])(f(_) :: _)
+  def flatMap[A,B](l: List[A])(f: A => List[B]): List[B] =
+    l.foldRight(List.empty[B])(f(_) ++ _)
+  def filter[A](l: List[A])(f: A => Boolean): List[A] =
+    l.foldRight(List.empty[A])((a,acc) => if (f(a)) a :: acc else acc)
+
+
 }
