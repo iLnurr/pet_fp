@@ -50,7 +50,7 @@ object main extends App {
 
   import cats.syntax.functor._
 //  Branch(Leaf(10), Leaf(20)).map(_ * 2)
-  Tree.branch(Tree.leaf(10), Tree.leaf(20)).map(_ * 2)
+  BinaryTree.branch(BinaryTree.leaf(10), BinaryTree.leaf(20)).map(_ * 2)
 
   format(Box("hello world"))
 
@@ -278,7 +278,7 @@ object main extends App {
   assert(evalInput("1 2 + 3 4 + *") == 21)
 
   // tree monad
-  import Tree._
+  import BinaryTree._
   import cats.syntax.flatMap._
   import cats.syntax.functor._
   for {
@@ -335,4 +335,18 @@ object main extends App {
   // res48: FailSlow[User] = Valid(User(Dave,37))
   readUser(Map("age" -> "-1")).println()
   // res49: FailSlow[User] = Invalid(List(name field not specified, age must be non-negative))
+
+  val tree1 = NonEmptyTree(1, Tree(1), NonEmptyTree(3), EmptyTree)
+  val tree2 = EmptyTree
+  val tree3 = Tree[Int]()
+  val tree4 = Tree(1, Tree(2), Tree(4))
+
+  tree4 match {
+    case NonEmptyTree(head, children) => println(s"non empty! $head, ${children.mkString(",")}")
+    case EmptyTree => println("empty!")
+  }
+  tree2 match {
+    case t @ Tree(_, _) => println(t)
+    case EmptyTree => println("empty!")
+  }
 }

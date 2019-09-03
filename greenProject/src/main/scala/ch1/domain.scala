@@ -7,15 +7,45 @@ import scala.util.{Failure, Success, Try}
 object domain {
   final case class Cat(name: String, age: Int, color: String)
 
-  sealed trait Tree[+A]
-  object Tree {
-    def branch[A](left: Tree[A], right: Tree[A]): Tree[A] =
-      Branch(left,right)
-    def leaf[A](a: A): Tree[A] =
-      Leaf(a)
+  sealed trait BinaryTree[+A]
+  object BinaryTree {
+    def branch[A](left: BinaryTree[A], right: BinaryTree[A]): BinaryTree[A] =
+      BinaryBranch(left,right)
+    def leaf[A](a: A): BinaryTree[A] =
+      BinaryLeaf(a)
   }
-  final case class Branch[A](left: Tree[A], right: Tree[A]) extends Tree[A]
-  final case class Leaf[A](value: A) extends Tree[A]
+  final case class BinaryBranch[A](left: BinaryTree[A], right: BinaryTree[A]) extends BinaryTree[A]
+  final case class BinaryLeaf[A](value: A) extends BinaryTree[A]
+
+  sealed trait Tree[+T] {
+    def headOption: Option[T]
+    def isEmpty: Boolean
+  }
+
+  object Tree {
+    def apply[T](): Tree[T] = EmptyTree
+    def apply[T](head: T, children: Vector[Tree[T]]): Tree[T] = NonEmptyTree(head, children)
+    def apply[T](head: T, children: Tree[T]*): Tree[T] = NonEmptyTree(head, children.toVector)
+
+    def unapply[T](tree: Tree[T]): Option[(T, Vector[Tree[T]])] = tree match {
+      case NonEmptyTree(head, children) => Some((head, children))
+      case EmptyTree => None
+    }
+  }
+
+  case class NonEmptyTree[+T](head: T, children: Vector[Tree[T]]) extends Tree[T] {
+    def headOption: Some[T] = Some(head)
+    def isEmpty = false
+  }
+
+  object NonEmptyTree {
+    def apply[T](head: T, children: Tree[T]*): NonEmptyTree[T] = NonEmptyTree(head, children.toVector)
+  }
+
+  case object EmptyTree extends Tree[Nothing] {
+    def headOption = None
+    def isEmpty = true
+  }
 
   final case class Box[A](value: A)
 

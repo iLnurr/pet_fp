@@ -43,12 +43,12 @@ object impl {
   implicit val catEq: Eq[Cat] =
     Eq.instance[Cat]((c1,c2) => c1.name === c2.name && c1.age === c2.age && c1.color === c2.color)
 
-  implicit val treeFunctor: Functor[Tree] = new Functor[Tree] {
-    override def map[A, B](fa: Tree[A])(f: A => B): Tree[B] = fa match {
-      case Branch(left, right) =>
-        Branch(map(left)(f), map(right)(f))
-      case Leaf(value) =>
-        Leaf(f(value))
+  implicit val treeFunctor: Functor[BinaryTree] = new Functor[BinaryTree] {
+    override def map[A, B](fa: BinaryTree[A])(f: A => B): BinaryTree[B] = fa match {
+      case BinaryBranch(left, right) =>
+        BinaryBranch(map(left)(f), map(right)(f))
+      case BinaryLeaf(value) =>
+        BinaryLeaf(f(value))
     }
   }
 
@@ -66,14 +66,14 @@ object impl {
   implicit def boxCodec[A](implicit c: Codec[A]): Codec[Box[A]] =
     c.imap(Box.apply, _.value)
 
-  implicit val treeMonad: Monad[Tree] = new Monad[Tree] {
-    override def pure[A](x: A): Tree[A] =
-      Tree.leaf(x)
+  implicit val treeMonad: Monad[BinaryTree] = new Monad[BinaryTree] {
+    override def pure[A](x: A): BinaryTree[A] =
+      BinaryTree.leaf(x)
 
-    override def flatMap[A, B](fa: Tree[A])(f: A => Tree[B]): Tree[B] = fa match {
-      case Branch(left, right) =>
-        Tree.branch(flatMap(left)(f), flatMap(right)(f))
-      case Leaf(value) =>
+    override def flatMap[A, B](fa: BinaryTree[A])(f: A => BinaryTree[B]): BinaryTree[B] = fa match {
+      case BinaryBranch(left, right) =>
+        BinaryTree.branch(flatMap(left)(f), flatMap(right)(f))
+      case BinaryLeaf(value) =>
         f(value)
     }
 
@@ -88,21 +88,21 @@ object impl {
 
     // stack safe from https://stackoverflow.com/questions/44504790/cats-non-tail-recursive-tailrecm-method-for-monads
     override def tailRecM[A, B](arg: A)
-                      (func: A => Tree[Either[A, B]]): Tree[B] = {
+                      (func: A => BinaryTree[Either[A, B]]): BinaryTree[B] = {
       @tailrec
-      def loop(open: List[Tree[Either[A, B]]],
-               closed: List[Option[Tree[B]]]): List[Tree[B]] = open match {
-        case Branch(l, r) :: next =>
+      def loop(open: List[BinaryTree[Either[A, B]]],
+               closed: List[Option[BinaryTree[B]]]): List[BinaryTree[B]] = open match {
+        case BinaryBranch(l, r) :: next =>
           loop(l :: r :: next, None :: closed)
-        case Leaf(Left(value)) :: next =>
+        case BinaryLeaf(Left(value)) :: next =>
           loop(func(value) :: next, closed)
-        case Leaf(Right(value)) :: next =>
+        case BinaryLeaf(Right(value)) :: next =>
           loop(next, Some(pure(value)) :: closed)
         case Nil =>
-          closed.foldLeft(Nil: List[Tree[B]]) { (acc, maybeTree) =>
+          closed.foldLeft(Nil: List[BinaryTree[B]]) { (acc, maybeTree) =>
             maybeTree.map(_ :: acc).getOrElse {
               val left :: right :: tail = acc
-              Tree.branch(left, right) :: tail
+              BinaryTree.branch(left, right) :: tail
             }
           }
       }
