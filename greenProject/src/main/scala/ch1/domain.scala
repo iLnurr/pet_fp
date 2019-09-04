@@ -1,7 +1,7 @@
 package ch1
 
-import cats.Applicative
-import cats.data.{Nested, Reader, Validated}
+import cats.{Applicative, Traverse}
+import cats.data.{Reader, Validated}
 
 import scala.util.{Failure, Success, Try}
 
@@ -18,14 +18,14 @@ object domain {
   final case class BinaryBranch[A](left: BinaryTree[A], right: BinaryTree[A]) extends BinaryTree[A]
   final case class BinaryLeaf[A](value: A) extends BinaryTree[A]
 
-  import cats.implicits._
+  import cats.instances.vector._
   sealed trait Tree[+T] {
     def headOption: Option[T]
     def isEmpty: Boolean
     def traverse[F[_]: Applicative, B](f: T => F[B]): F[Tree[B]] = this match {
       case NonEmptyTree(head, children) =>
         val h: F[B] = f(head)
-        val ch: F[Vector[Tree[B]]] = children.traverse[F,Tree[B]](tree => tree.traverse(f))
+        val ch: F[Vector[Tree[B]]] = Traverse[Vector].traverse(children)(_.traverse(f))
         Applicative[F].map2(h, ch)(Tree(_,_))
       case EmptyTree =>
         Applicative[F].pure(Tree())
