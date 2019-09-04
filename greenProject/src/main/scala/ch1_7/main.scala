@@ -1,13 +1,13 @@
-package ch1
+package ch1_7
 
 import cats.data.{EitherT, Writer, WriterT}
 import cats.{Eval, Id}
-import ch1.algebra.PrintableSyntax._
-import ch1.domain._
-import ch1.impl._
+import ch1_7.algebra.PrintableSyntax._
+import ch1_7.domain._
+import ch1_7.impl._
 
 object main extends App {
-  import ch1.algebra.Printable._
+  import ch1_7.algebra.Printable._
   val cat = Cat("c", 1, "red")
 
   print(cat)
@@ -54,8 +54,8 @@ object main extends App {
 
   format(Box("hello world"))
 
-  import ch1.algebra.Codec._
-  import ch1.algebra.CodecSyntax._
+  import ch1_7.algebra.Codec._
+  import ch1_7.algebra.CodecSyntax._
   encode(123.4)
   123.4.encode
   // res0: String = 123.4

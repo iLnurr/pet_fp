@@ -1,8 +1,8 @@
-package ch1
+package ch1_7
 
 import cats.{Functor, Monad}
-import ch1.algebra._
-import ch1.domain._
+import ch1_7.algebra._
+import ch1_7.domain._
 
 import scala.annotation.tailrec
 
