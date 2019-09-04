@@ -6,10 +6,10 @@ import fs2ws.Domain._
 import fs2ws._
 import fs2ws.impl.State._
 
-class ServerImpl(val core: MsgStreamPipe[IO] => Stream[IO,Unit])
+class ServerImpl(val clients: Clients[IO],
+                 val core: MsgStreamPipe[IO] => Stream[IO,Unit])
                 (implicit ce: ConcurrentEffect[IO], timer: Timer[IO])
   extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
-  val clients = ConnectedClients.create[IO].unsafeRunSync()
   override def handler: Message => IO[Message] =
     Services.handleReq
   override def start(): IO[Unit] =
