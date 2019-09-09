@@ -51,13 +51,13 @@ object Services {
   private def ping: PingReq => IO[Message] = req =>
     IO.pure(PongResponse(req.seq))
 
-  private def tables: TableMsg => IO[TableMsg] = {
+  private def tables: TableMsg => IO[Message] = {
     case SubscribeTables(_) =>
-      tableList // TODO
+      tableList
     case _:UnsubscribeTables =>
-      tableList // TODO
+      IO.pure(EmptyMsg)
     case AddTableReq(after_id, table, _) =>
-      Tables.add(table).flatMap {
+      Tables.add(after_id, table).flatMap {
         case Left(_) =>
           IO.pure(AddTableFailResponse(after_id))
         case Right(inserted) =>
@@ -89,12 +89,19 @@ abstract class DB[F[_],T <: DBEntity](implicit F: Sync[F]) {
     F.delay(repo.find(_.id == Option(id)))
   def getByName(n: String): F[Option[T]] =
     F.delay(repo.find(_.name == n))
-  def add(ent: T): F[Either[Throwable, T]] =
-    F.delay(Right{
+  def add(after_id: Long, ent: T): F[Either[Throwable, T]] =
+    F.delay(Try{
       val checked = setIdIfEmpty(counter.incrementAndGet())(ent)
-      repo.append(checked)
+      if (after_id < 0) {
+        repo.prepend(checked)
+      } else if (repo.size < after_id) {
+        repo.append(checked)
+      } else {
+        repo.insert((after_id + 1L).toInt, checked)
+      }
+      println(repo)
       checked
-    })
+    }.toEither)
   def list: F[Seq[T]] =
     F.delay(repo.toSeq)
   def update(ent: T): F[Either[Throwable, Unit]] =
@@ -119,7 +126,7 @@ object Users extends DB[IO, User] {
   val admin = User(Option(0L), "admin", "admin", UserType.ADMIN)
   val user = User(Option(1L), "un", "upwd", UserType.USER)
 
-  (add(admin) >> add(user)).unsafeRunSync()
+  (add(-1, admin) >> add(0,user)).unsafeRunSync()
 
   override def setIdIfEmpty: Long => User => User = newId => input =>
     input.copy(id = Some(input.id.getOrElse(newId)))

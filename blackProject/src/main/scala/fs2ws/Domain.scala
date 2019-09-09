@@ -28,6 +28,9 @@ object Domain {
   sealed trait Message {
     def $type: String
   }
+  case object EmptyMsg extends Message {
+    override def $type: String = "empty"
+  }
 
   sealed trait AuthMsg extends Message
   sealed trait PrivilegedCommands extends Message // Only admins are allowed to use these commands
