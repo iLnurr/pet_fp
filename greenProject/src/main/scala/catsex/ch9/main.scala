@@ -1,7 +1,7 @@
-package ch9
+package catsex.ch9
 
 import impl._
-
+import catsex._
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 

@@ -1,4 +1,4 @@
-package ch9
+package catsex.ch9
 
 import cats.Monoid
 

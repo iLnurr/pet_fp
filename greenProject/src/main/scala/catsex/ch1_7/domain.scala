@@ -1,4 +1,4 @@
-package ch1_7
+package catsex.ch1_7
 
 import cats.{Applicative, Traverse}
 import cats.data.{Reader, Validated}

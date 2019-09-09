@@ -1,4 +1,4 @@
-package ch8
+package catsex.ch8
 
 import cats.Id
 

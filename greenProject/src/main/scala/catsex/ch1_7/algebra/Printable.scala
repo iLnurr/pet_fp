@@ -1,4 +1,4 @@
-package ch1_7.algebra
+package catsex.ch1_7.algebra
 
 trait Printable[A] {
   self =>

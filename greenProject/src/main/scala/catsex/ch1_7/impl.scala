@@ -1,8 +1,9 @@
-package ch1_7
+package catsex.ch1_7
 
 import cats.{Functor, Monad}
-import ch1_7.algebra._
-import ch1_7.domain._
+import catsex.ch1_7.domain._
+import catsex.ch1_7.algebra.{Codec, Printable}
+import catsex.ch1_7.domain.{BinaryTree, Box, Cat}
 
 import scala.annotation.tailrec
 
