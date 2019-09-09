@@ -27,21 +27,10 @@ class ServerImpl(val clients: Clients[IO],
           .flatMap{client =>
             val inputStream = input.evalMap(in =>
               clients.updateClients(client,in) // update by incoming
-                .flatMap { case (message, updated) => message match {
-                  case commands: PrivilegedCommands =>
-                    if (!updated.privileged) IO.pure(NotAuthorized() -> updated) else handler(commands).map(_ -> updated)
-                  case other =>
-                    handler(other).map(_ -> updated)
-                }}
+                .flatMap { case (message, updated) =>
+                  handlePrivileged(message, updated)}
                 .flatMap { case (msg, updated) =>
-                  msg match {
-                    case _: AddTableResponse | _: UpdateTableResponse | _: RemoveTableResponse =>
-                      Services.tableList
-                        .flatMap { tableList => clients.broadcast(tableList, _.subscribed) }
-                        .map(_ => msg -> updated)
-                    case _ =>
-                      IO.pure(msg -> updated)
-                  }
+                  handleTableChanges(msg, updated)
                 }
                 .flatMap{ case (msg,updated) =>
                   clients.updateClients(updated,msg) // update by response
@@ -53,6 +42,26 @@ class ServerImpl(val clients: Clients[IO],
             inputStream merge push(clients, client)
           }
       }
+
+  private def handleTableChanges(msg: Message, updated: Client[IO]) = {
+    msg match {
+      case _: AddTableResponse | _: UpdateTableResponse | _: RemoveTableResponse =>
+        Services.tableList
+          .flatMap { tableList => clients.broadcast(tableList, _.subscribed) }
+          .map(_ => msg -> updated)
+      case _ =>
+        IO.pure(msg -> updated)
+    }
+  }
+
+  private def handlePrivileged(message: Message, updated: Client[IO]) = {
+    message match {
+      case commands: PrivilegedCommands =>
+        if (!updated.privileged) IO.pure(NotAuthorized() -> updated) else handler(commands).map(_ -> updated)
+      case other =>
+        handler(other).map(_ -> updated)
+    }
+  }
 
   import scala.concurrent.duration._
   private def push(clients: Clients[IO], client: Client[IO]): Stream[IO, Message] = {
