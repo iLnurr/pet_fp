@@ -60,9 +60,6 @@ object algebra {
 
   }
   object Check {
-    def apply[E, A](pred: Predicate[E, A]): Check[E, A, A] =
-      PurePredicate(pred)
-
     final case class MapCheck[E,A,B,C](c: Check[E,A,B], f: B => C) extends Check[E,A,C] {
       def apply(a: A)(implicit s: Semigroup[E]): Validated[E, C] =
         c(a).map(f)
@@ -84,7 +81,7 @@ object algebra {
     def apply[E, A, B](func: A => Validated[E, B]): Check[E, A, B] =
       PureValidate(func)
     final case class AndThenCheck[E,A,B,C](c1: Check[E,A,B],
-                                           c2: Check[E,A,C]) extends Check[E,A,C] {
+                                           c2: Check[E,B,C]) extends Check[E,A,C] {
       def apply(a: A)(implicit s: Semigroup[E]): Validated[E, C] =
         c1(a).withEither(_.flatMap(b => c2(b).toEither))
     }
