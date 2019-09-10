@@ -30,6 +30,9 @@ object algebra {
             }
         }
     }
+
+    def run(implicit s: Semigroup[E]): A => Either[E, A] =
+      apply(_).toEither
   }
   object Predicate {
     final case class And[E, A](left: Predicate[E, A],
