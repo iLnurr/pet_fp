@@ -1,32 +1,14 @@
 package catsex.ch11
 
 import cats.kernel.CommutativeMonoid
-import catsex.ch11.algebra.BoundedSemiLattice
-import cats.instances.list._   // for Monoid
-import cats.instances.map._    // for Monoid
-import cats.syntax.semigroup._ // for |+|
+import catsex.ch11.algebra.{BoundedSemiLattice, GCounter, KeyValueStore}
+import cats.instances.list._
+import cats.instances.map._
+import cats.syntax.semigroup._
 import cats.syntax.foldable._  // for combineAll
 
 object impl {
-  final case class GCounterSimple(counters: Map[String, Int]) {
-    def increment(machine: String, amount: Int): Unit = {
-      copy(counters = counters.updated(machine,amount + counters.getOrElse(machine, 0)))
-    }
-    def merge(that: GCounterSimple): GCounterSimple = {
-      def merge(first: Map[String,Int], sec: Map[String,Int]): Map[String,Int] = {
-        val mergedByFirst = first.map { case (k, v) =>
-          k -> sec.get(k).map(i => math.max(i,v)).getOrElse(v)
-        }
-        val diffBySec = sec.filterNot{case (k,_) => first.contains(k)}
-        mergedByFirst ++ diffBySec
-      }
-      copy(counters = merge(this.counters, that.counters))
-    }
-    def total: Int =
-      counters.values.sum
-  }
-
-  val intBS: BoundedSemiLattice[Int] = new BoundedSemiLattice[Int] {
+  implicit val intBS: BoundedSemiLattice[Int] = new BoundedSemiLattice[Int] {
     def combine(a1: Int, a2: Int): Int =
       a1 max a2
 
@@ -34,8 +16,7 @@ object impl {
       0
   }
 
-
-  def setBS[A](): BoundedSemiLattice[Set[A]] = new BoundedSemiLattice[Set[A]] {
+  implicit def setBS[A](): BoundedSemiLattice[Set[A]] = new BoundedSemiLattice[Set[A]] {
     def combine(a1: Set[A], a2: Set[A]): Set[A] =
       a1 union a2
 
@@ -43,14 +24,46 @@ object impl {
       Set.empty[A]
   }
 
-  final case class GCounter[A](counters: Map[String, A]) {
-    def increment(machine: String, amount: A)(implicit cm: CommutativeMonoid[A]): Unit =
-      GCounter[A](counters = counters.updated(machine,amount |+| counters.getOrElse(machine, 0)))
+  implicit def mapKV: KeyValueStore[Map] = new KeyValueStore[Map] {
+    def put[K, V](f: Map[K, V])(k: K, v: V): Map[K, V] =
+      f.updated(k,v)
 
-    def merge(that: GCounter[A])(implicit bs: BoundedSemiLattice[A]): GCounter[A] =
-      GCounter(this.counters |+| that.counters)
+    def get[K, V](f: Map[K, V])(k: K): Option[V] =
+      f.get(k)
 
-    def total(implicit cm: CommutativeMonoid[A]): A =
-      counters.values.toList.combineAll
+    def values[K, V](f: Map[K, V]): List[V] =
+      f.values.toList
   }
+
+  implicit class KvsOps[F[_,_], K, V](f: F[K, V]) {
+    def put(key: K, value: V)
+           (implicit kvs: KeyValueStore[F]): F[K, V] =
+      kvs.put(f)(key, value)
+
+    def get(key: K)(implicit kvs: KeyValueStore[F]): Option[V] =
+      kvs.get(f)(key)
+
+    def getOrElse(key: K, default: V)
+                 (implicit kvs: KeyValueStore[F]): V =
+      kvs.getOrElse(f)(key, default)
+
+    def values(implicit kvs: KeyValueStore[F]): List[V] =
+      kvs.values(f)
+  }
+
+  implicit def gcounterInstance[F[_,_], K, V](implicit kvs: KeyValueStore[F], km: CommutativeMonoid[F[K, V]]): GCounter[F, K, V] =
+    new GCounter[F, K, V] {
+      def increment(f: F[K, V])(key: K, value: V)
+                   (implicit m: CommutativeMonoid[V]): F[K, V] = {
+        val total = f.getOrElse(key, m.empty) |+| value
+        f.put(key, total)
+      }
+      def merge(f1: F[K, V], f2: F[K, V])
+               (implicit b: BoundedSemiLattice[V]): F[K, V] =
+        f1 |+| f2
+      def total(f: F[K, V])(implicit m: CommutativeMonoid[V]): V =
+        f.values.combineAll
+    }
+
+  implicit val gcounterMapStringInt: GCounter[Map, String, Int] = gcounterInstance[Map,String,Int]
 }
