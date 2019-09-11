@@ -8,12 +8,28 @@ import cats.syntax.semigroup._
 import cats.syntax.foldable._  // for combineAll
 
 object impl {
-  implicit val intBS: BoundedSemiLattice[Int] = new BoundedSemiLattice[Int] {
+  implicit val intMaxBS: BoundedSemiLattice[Int] = new BoundedSemiLattice[Int] {
     def combine(a1: Int, a2: Int): Int =
       a1 max a2
 
     def empty: Int =
       0
+  }
+
+  implicit val intSumCM: CommutativeMonoid[Int] = new CommutativeMonoid[Int] {
+    def combine(a1: Int, a2: Int): Int =
+      a1 + a2
+
+    def empty: Int =
+      0
+  }
+
+  implicit val intProdCM: CommutativeMonoid[Int] = new CommutativeMonoid[Int] {
+    def combine(a1: Int, a2: Int): Int =
+      a1 * a2
+
+    def empty: Int =
+      1
   }
 
   implicit def setBS[A](): BoundedSemiLattice[Set[A]] = new BoundedSemiLattice[Set[A]] {

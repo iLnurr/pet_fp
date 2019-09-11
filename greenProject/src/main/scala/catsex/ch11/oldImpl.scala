@@ -1,11 +1,11 @@
 package catsex.ch11
 
-import cats.kernel.CommutativeMonoid
-import catsex.ch11.algebra.{BoundedSemiLattice, GCounter, KeyValueStore}
 import cats.instances.list._
 import cats.instances.map._
+import cats.kernel.CommutativeMonoid
+import cats.syntax.foldable._
 import cats.syntax.semigroup._
-import cats.syntax.foldable._  // for combineAll
+import catsex.ch11.algebra.{BoundedSemiLattice, GCounter}  // for combineAll
 
 object oldImpl {
   final case class GCounterSimple(counters: Map[String, Int]) {

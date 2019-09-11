@@ -13,7 +13,7 @@ object main extends App {
   val merged = counter.merge(g1, g2)
   merged.println()
   // merged: Map[String,Int] = Map(a -> 7, b -> 5)
-  val total  = counter.total(merged)
+  val total  = counter.total(merged)(intSumCM)
   total.println()
   // total: Int = 12
 
