@@ -1,10 +1,9 @@
 package catsex.ch10
 
-import catsex.ch10.algebra.{Check, Predicate}
-import cats.data.{NonEmptyList, Validated, ValidatedNel}
+import cats.data.{NonEmptyList, Validated}
 import cats.syntax.apply._
-import cats.syntax.validated._ // for valid and invalid
-import cats.instances.string._
+import cats.syntax.validated._
+import catsex.ch10.algebra.{Check, Predicate} // for valid and invalid
 
 object impl {
   type Errors = NonEmptyList[String]
@@ -29,34 +28,31 @@ object impl {
   def checkUsername: Check[Errors, String,String] =
     Check(longerThan(3) and alphanumeric)
 
-  //An email address must contain an @ sign. Split the string at the @.
-  // The string to the left􏰁 must not be empty.
-  // The string to the right must be at least three characters long and contain a dot.
-  def split(s:String): ValidatedNel[String, (String, String)] = {
-    s.split("@") match {
-      case Array(l,r) =>
-        (l,r).validNel[String]
-      case _ =>
-        "must contains single @".invalidNel[(String,String)]
-    }
+  // An email address must contain a single `@` sign.
+  // Split the string at the `@`.
+  // The string to the left must not be empty.
+  // The string to the right must be
+  // at least three characters long and contain a dot.
+  val splitEmail: Check[Errors, String, (String, String)] = Check(_.split('@') match {
+    case Array(name, domain) =>
+      (name, domain).validNel[String]
+    case _ =>
+      "Must contain a single @ character".
+        invalidNel[(String, String)]
+  })
+  val checkLeft: Check[Errors, String, String] =
+    Check(longerThan(0))
+  val checkRight: Check[Errors, String, String] =
+    Check(longerThan(3) and contains('.'))
+
+  val joinEmail: Check[Errors, (String, String), String] = Check { case (l, r) =>
+    (checkLeft(l), checkRight(r)).mapN(_ + "@" + _)
   }
-  def checkEmail: Check[Errors, String,String] = Check { (email: String) =>
-    contains('@').apply(email)
-      .andThen{ s =>
-        split(s)
-      }.andThen{ case (l,r) =>
-      longerThan(0)(l)
-        .combine(
-          longerThan(2)(r) combine contains('.')(r)
-        ).andThen(_ => (s"$l@$r").validNel[String])
-    }
-  }
+  val checkEmail1: Check[Errors, String, String] =
+    splitEmail andThen joinEmail
 
   final case class User(username: String, email: String)
   def createUser(username: String,
                  email: String): Validated[Errors, User] =
-    (checkUsername(username), checkEmail(email)).mapN(User)
-
-
-
+    (checkUsername(username), checkEmail1(email)).mapN(User)
 }
