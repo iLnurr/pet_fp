@@ -25,43 +25,37 @@ class ServerImpl(val clients: Clients[IO],
         Stream
           .bracket(clients.register(Client()))(c => clients.unregister(c))
           .flatMap{client =>
-            val inputStream = input.evalMap(in =>
-              clients.updateClients(client,in) // update by incoming
-                .flatMap { case (message, updated) =>
-                  handlePrivileged(message, updated)}
-                .flatMap { case (msg, updated) =>
-                  handleTableChanges(msg, updated)
+            val inputStream = input.evalMap { request =>
+              for {
+                clientState <- clients.get(client.id).map(_.getOrElse(client))
+                response <- handler(request)
+              } yield {
+                if (request.isInstanceOf[PrivilegedCommands] && !clientState.privileged) {
+                  NotAuthorized()
+                } else {
+                  response match {
+                    case msg@(_: AddTableResponse | _: UpdateTableResponse | _: RemoveTableResponse) =>
+                      Services.tableList
+                        .flatMap { tableList =>
+                          clients.broadcast(tableList, _.subscribed)
+                        }.unsafeRunAsyncAndForget()
+                      msg
+                    case response =>
+                      IO.delay {
+                        val stateUpdatedByRequest = clientState.updateState(request)
+                        val stateUpdatedByResponse = stateUpdatedByRequest.updateState(response)
+                        stateUpdatedByResponse
+                      }.flatMap(clients.update)
+                        .unsafeRunAsyncAndForget()
+                      response
+                  }
                 }
-                .flatMap{ case (msg,updated) =>
-                  clients.updateClients(updated,msg) // update by response
-                })
-              .map{ case (msg,_) =>
-                msg
               }
+            }
 
             inputStream merge push(clients, client)
           }
       }
-
-  private def handleTableChanges(msg: Message, updated: Client[IO]) = {
-    msg match {
-      case _: AddTableResponse | _: UpdateTableResponse | _: RemoveTableResponse =>
-        Services.tableList
-          .flatMap { tableList => clients.broadcast(tableList, _.subscribed) }
-          .map(_ => msg -> updated)
-      case _ =>
-        IO.pure(msg -> updated)
-    }
-  }
-
-  private def handlePrivileged(message: Message, updated: Client[IO]) = {
-    message match {
-      case commands: PrivilegedCommands =>
-        if (!updated.privileged) IO.pure(NotAuthorized() -> updated) else handler(commands).map(_ -> updated)
-      case other =>
-        handler(other).map(_ -> updated)
-    }
-  }
 
   import scala.concurrent.duration._
   private def push(clients: Clients[IO], client: Client[IO]): Stream[IO, Message] = {
@@ -70,11 +64,11 @@ class ServerImpl(val clients: Clients[IO],
       .evalMap(_ =>
         clients.get(client.id).map {
           case Some(client) =>
-            val l = client.take
-            if (l.nonEmpty) {
-              println(s"Push to client ${client} ${l.mkString(",")}")
+            val messages = client.take
+            if (messages.nonEmpty) {
+              println(s"Push to client ${client} ${messages.mkString(",")}")
               Stream
-                .emits[IO, Message](l)
+                .emits[IO, Message](messages)
             } else {
               Stream.empty
             }

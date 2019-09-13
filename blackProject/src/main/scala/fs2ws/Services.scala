@@ -42,9 +42,9 @@ object Services {
 
   private def auth: AuthReq => IO[Message] = ar =>
     Users.getByName(ar.username).map {
-      case Some(user) =>
+      case Some(user) if ar.password == user.password =>
         AuthSuccessResp(user.user_type)
-      case None =>
+      case _ =>
         AuthFailResp()
     }
 

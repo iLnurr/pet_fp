@@ -16,9 +16,8 @@ object State {
                                                username: Option[String] = None,
                                                userType: Option[String] = None,
                                                subscribed: Boolean = false) {
-    private val msgQueue = ListBuffer[Message]() // TODO
-    def add(message: Message): Unit = // TODO
-    {
+    private val msgQueue = ListBuffer[Message]()
+    def add(message: Message): Unit = {
       println(s"Client $id: Add $message")
       msgQueue.append(message)
     }
@@ -51,7 +50,7 @@ object State {
 
   import cats.implicits._
 
-  case class ConnectedClients[F[_] : Sync](ref: Ref[F, Map[UUID, Client[F]]]) extends Clients[F] {
+  case class ConnectedClients[F[_] : Sync](val ref: Ref[F, Map[UUID, Client[F]]]) extends Clients[F] {
     def register(state: Client[F]): F[Client[F]] = {
       println(s"ConnectedClients: Register $state")
       ref.modify { oldClients =>
@@ -76,23 +75,10 @@ object State {
         }
     }
 
-    def updateClients(client: Client[F], message: Message): F[(Message, Client[F])] =
-      get(client.id)
-        .flatMap {
-          case Some(refClient) =>
-            println(s"ConnectedClients: Update client in ref $refClient")
-            update(refClient.updateState(message))
-              .map(updatedClient => (message, updatedClient))
-          case None =>
-            println(s"ConnectedClients: Client not found in ref use $client")
-            update(client.updateState(message))
-              .map(updatedClient => (message, updatedClient))
-        }
-
     def get(id: UUID): F[Option[Client[F]]] =
       ref.get.map(_.get(id))
 
-    private def update(toUpdate: Client[F]): F[Client[F]] =
+    def update(toUpdate: Client[F]): F[Client[F]] =
       ref.modify { old =>
         val updatedClient = old.get(toUpdate.id).map(_ => toUpdate)
         val updatedClients = updatedClient
