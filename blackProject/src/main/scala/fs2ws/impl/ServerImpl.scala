@@ -10,8 +10,13 @@ class ServerImpl(val clients: Clients[IO],
                  val core: MsgStreamPipe[IO] => Stream[IO,Unit])
                 (implicit ce: ConcurrentEffect[IO], timer: Timer[IO])
   extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
-  override def handler: Message => IO[Message] =
-    Services.handleReq
+  override def handler: (Message,Client[IO]) => IO[Message] = (req, clientState) =>
+    if (req.isInstanceOf[PrivilegedCommands] && !clientState.privileged) {
+      IO.pure(NotAuthorized())
+    } else {
+      Services.handleReq(req)
+    }
+
   override def start(): IO[Unit] =
     core{
       pipe
@@ -28,34 +33,34 @@ class ServerImpl(val clients: Clients[IO],
             val inputStream = input.evalMap { request =>
               for {
                 clientState <- clients.get(client.id).map(_.getOrElse(client))
-                response <- handler(request)
-              } yield {
-                if (request.isInstanceOf[PrivilegedCommands] && !clientState.privileged) {
-                  NotAuthorized()
-                } else {
-                  response match {
-                    case msg@(_: AddTableResponse | _: UpdateTableResponse | _: RemoveTableResponse) =>
-                      Services.tableList
-                        .flatMap { tableList =>
-                          clients.broadcast(tableList, _.subscribed)
-                        }.unsafeRunAsyncAndForget()
-                      msg
-                    case response =>
-                      IO.delay {
-                        val stateUpdatedByRequest = clientState.updateState(request)
-                        val stateUpdatedByResponse = stateUpdatedByRequest.updateState(response)
-                        stateUpdatedByResponse
-                      }.flatMap(clients.update)
-                        .unsafeRunAsyncAndForget()
-                      response
-                  }
-                }
-              }
+                response <- handler(request, clientState)
+                _ = updateStateAsync(clients,clientState,request,response)
+              } yield response
             }
 
             inputStream merge push(clients, client)
           }
       }
+
+  private def updateStateAsync(clients: Clients[IO], clientState: Client[IO], request: Message , response: Message): Unit =
+    updateState(clients,clientState,request,response).unsafeRunAsyncAndForget()
+
+  private def updateState(clients: Clients[IO], clientState: Client[IO], request: Message , response: Message): IO[Unit] = {
+    response match {
+      case _: AddTableResponse | _: UpdateTableResponse | _: RemoveTableResponse =>
+        Services.tableList
+          .flatMap { tableList =>
+            clients.broadcast(tableList, _.subscribed)
+          }
+      case response =>
+        clients
+          .update(
+            clientState
+              .updateState(request)
+              .updateState(response)
+          )
+    }
+  }
 
   import scala.concurrent.duration._
   private def push(clients: Clients[IO], client: Client[IO]): Stream[IO, Message] = {

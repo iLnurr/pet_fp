@@ -78,14 +78,14 @@ object State {
     def get(id: UUID): F[Option[Client[F]]] =
       ref.get.map(_.get(id))
 
-    def update(toUpdate: Client[F]): F[Client[F]] =
+    def update(toUpdate: Client[F]): F[Unit] =
       ref.modify { old =>
         val updatedClient = old.get(toUpdate.id).map(_ => toUpdate)
         val updatedClients = updatedClient
           .map(cl => old + (toUpdate.id -> cl))
           .getOrElse(old)
         (updatedClients, toUpdate)
-      }
+      }.map(_ => ())
   }
 
   object ConnectedClients {

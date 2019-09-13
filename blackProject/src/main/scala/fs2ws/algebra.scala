@@ -22,12 +22,12 @@ trait Clients[F[_]] {
   def register(c: Client[F]): F[Client[F]]
   def unregister(c: Client[F]): F[Unit]
   def broadcast(message: Message, filterF: Client[F] => Boolean): F[Unit]
-  def update(toUpdate: Client[F]): F[Client[F]]
+  def update(toUpdate: Client[F]): F[Unit]
 }
 
 @finalAlg
 trait ServerAlgebra[F[_],I,O,StreamPipe[_[_]]] {
-  def handler: I => F[O]
+  def handler: (I,Client[F]) => F[O]
   def clients: Clients[F]
   def start(): F[Unit]
   def pipe: StreamPipe[F]
