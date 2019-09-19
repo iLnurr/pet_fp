@@ -33,9 +33,13 @@ object Deps {
     "io.circe" %% "circe-generic-extras"
   ).map(_ % Versions.circe)
 
+  private lazy val conf = Seq(
+    "com.typesafe" % "config" % "1.3.4"
+  )
+
   lazy val redProjectDeps: Seq[ModuleID]  = Seq()
 
   lazy val greenProjectDeps: Seq[ModuleID] = cats
 
-  lazy val blackProjectDeps: Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ enumeratum
+  lazy val blackProjectDeps: Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ enumeratum ++ conf
 }

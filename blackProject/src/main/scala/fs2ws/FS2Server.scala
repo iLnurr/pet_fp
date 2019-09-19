@@ -5,6 +5,7 @@ import java.nio.channels.AsynchronousChannelGroup
 import java.util.concurrent.Executors
 
 import cats.effect.{Concurrent, ConcurrentEffect, Timer}
+import com.typesafe.config.ConfigFactory
 import fs2._
 import scodec.Codec
 import spinoco.fs2.http
@@ -16,6 +17,8 @@ import spinoco.protocol.http._
 import scala.concurrent.duration._
 
 object FS2Server {
+  lazy val config = ConfigFactory.load()
+  lazy val port = config.getInt("server.port")
   implicit val AG: AsynchronousChannelGroup =
     AsynchronousChannelGroup
       .withThreadPool(Executors.newCachedThreadPool(util.mkThreadFactory("fs2-http-spec-AG", daemon = true)))
@@ -37,6 +40,6 @@ object FS2Server {
   }
 
   def start[F[_]: ConcurrentEffect: Timer](wsPipe: Pipe[F, Frame[String], Frame[String]]): Stream[F, Unit] =
-    Stream.emit[F,Unit](println(s"Start server on port 9000")) ++
-    http.server[F](new InetSocketAddress("127.0.0.1", 9000))(service(_, _)(wsPipe))
+    Stream.emit[F,Unit](println(s"Start server on port $port")) ++
+    http.server[F](new InetSocketAddress("127.0.0.1", port))(service(_, _)(wsPipe))
 }
