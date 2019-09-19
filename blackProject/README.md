@@ -3,6 +3,9 @@
 ### Websockets API
 #### Authentication 
 
+### url 
+`ws://localhost:9000/ws_api`
+
 Client sends
 `{
 "$type": "login", "username": "admin", "password": "admin"
