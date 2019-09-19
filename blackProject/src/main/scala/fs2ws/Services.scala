@@ -57,25 +57,25 @@ object Services {
     case _:UnsubscribeTables =>
       IO.pure(EmptyMsg)
     case AddTableReq(after_id, table, _) =>
-      Tables.add(after_id, table).flatMap {
+      Tables.add(after_id, table).map {
         case Left(_) =>
-          IO.pure(AddTableFailResponse(after_id))
+          AddTableFailResponse(after_id)
         case Right(inserted) =>
-          IO.pure(AddTableResponse(after_id,inserted))
+          AddTableResponse(after_id,inserted)
       }
     case UpdateTableReq(table, _) =>
-      Tables.update(table).flatMap {
+      Tables.update(table).map {
         case Left(_) =>
-          IO.pure(UpdateTableFailResponse(table.id.getOrElse(-1L)))
+          UpdateTableFailResponse(table.id.getOrElse(-1L))
         case Right(_) =>
-          IO.pure(UpdateTableResponse(table))
+          UpdateTableResponse(table)
       }
     case RemoveTableReq(id, _) =>
-      Tables.remove(id).flatMap {
+      Tables.remove(id).map {
         case Left(_) =>
-          IO.pure(RemoveTableFailResponse(id))
+          RemoveTableFailResponse(id)
         case Right(_) =>
-          IO.pure(RemoveTableResponse(id))
+          RemoveTableResponse(id)
       }
     case other =>
       IO.raiseError(new RuntimeException(s"Bad request: $other"))

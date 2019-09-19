@@ -6,9 +6,7 @@ import java.util.concurrent.Executors
 
 import cats.effect.{Concurrent, ConcurrentEffect, Timer}
 import fs2._
-import scodec.Attempt.{Failure, Successful}
-import scodec.bits.ByteVector
-import scodec.{Codec, Err}
+import scodec.Codec
 import spinoco.fs2.http
 import spinoco.fs2.http._
 import spinoco.fs2.http.websocket.Frame
@@ -22,16 +20,7 @@ object FS2Server {
     AsynchronousChannelGroup
       .withThreadPool(Executors.newCachedThreadPool(util.mkThreadFactory("fs2-http-spec-AG", daemon = true)))
 
-  implicit val codec: Codec[String] = scodec.codecs.bytes.exmap[String](
-    bv => bv.decodeUtf8 match {
-      case Left(exception) => Failure(Err(exception.getMessage))
-      case Right(str) => Successful(str)
-    }
-    , b => ByteVector.encodeUtf8(b) match {
-      case Left(exception) => Failure(Err(exception.getMessage))
-      case Right(vector) => Successful(vector)
-    }
-  )
+  implicit val codec: Codec[String] = scodec.codecs.utf8
 
   def service[F[_]](request: HttpRequestHeader, body: Stream[F,Byte])
                    (wsPipe: Pipe[F, Frame[String], Frame[String]])
