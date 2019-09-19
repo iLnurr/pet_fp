@@ -8,7 +8,7 @@ choose available port: for example: 9003
 `java -DPORT=9003 -jar fs2WSserver-assembly-0.1.jar`
 
 ### url 
-`ws://localhost:9000/ws_api`
+`ws://localhost:9003/ws_api`
 
 Client sends
 `{
