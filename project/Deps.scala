@@ -6,6 +6,7 @@ object Deps {
     val circe = "0.11.1"
     val enumeratum = "1.5.13"
     val catsTagless  = "0.9"
+    val shapeless = "2.3.3"
   }
 
   private lazy val cats = Seq(
@@ -37,9 +38,13 @@ object Deps {
     "com.typesafe" % "config" % "1.3.4"
   )
 
+  private lazy val shapeless = Seq(
+    "com.chuusai" %% "shapeless" % Versions.shapeless
+  )
+
   lazy val redProjectDeps: Seq[ModuleID]  = Seq()
 
-  lazy val greenProjectDeps: Seq[ModuleID] = cats
+  lazy val greenProjectDeps: Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++ conf ++ shapeless
 
   lazy val blackProjectDeps: Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ enumeratum ++ conf
 }
