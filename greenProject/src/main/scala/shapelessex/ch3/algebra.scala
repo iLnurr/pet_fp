@@ -2,8 +2,10 @@ package shapelessex.ch3
 
 trait MyTC[A] {
   def to(a: A): Array[Byte]
+
   def from(b: Array[Byte]): A
 }
+
 object MyTC {
   def mat[A](implicit inst: MyTC[A]): MyTC[A] =
     inst
