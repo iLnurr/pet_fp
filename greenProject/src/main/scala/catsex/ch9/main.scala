@@ -2,8 +2,10 @@ package catsex.ch9
 
 import impl._
 import catsex._
+import cats.instances.future._
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object main extends App {
   import cats.instances.int._ // for Monoid
@@ -17,7 +19,7 @@ object main extends App {
   val future1: Future[Int] =
     parallelFoldMap1((1 to 1000).toVector)(_ * 1000)
   val future2: Future[Int] =
-    parallelFoldMap2((1 to 1000).toVector)(_ * 1000)
+    parallelFoldMap2[Future, Int,Int]((1 to 1000).toVector)(_ * 1000)
   Await.result(future1, 1.second).println()
   // res3: Int = 500500000
 

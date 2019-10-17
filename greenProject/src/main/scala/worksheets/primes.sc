@@ -1,8 +1,3 @@
-
-
-def nextPrime(p: BigDecimal): BigDecimal =
-  BigDecimal.javaBigDecimal2bigDecimal(new java.math.BigDecimal(p.toBigInt().underlying().nextProbablePrime()))
-
 def next(i: Int): Int =
   java.math.BigInteger.valueOf(i).nextProbablePrime().intValue()
 
