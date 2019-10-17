@@ -18,6 +18,11 @@ object Free {
   case class FlatMap[F[_],A,B](s: Free[F, A],
                                f: A => Free[F, B]) extends Free[F, B]
 
+  def pure[F[_],A](a: A): Free[F,A] =
+    Return[F,A](a)
+  def liftF[F[_],A](f: F[A]): Free[F,A] =
+    Suspend[F,A](f)
+
   def freeMonad[F[_]]: Monad[({type f[a] = Free[F,a]})#f] = new Monad[({type f[a] = Free[F, a]})#f] {
     override def unit[A](a: => A): Free[F, A] =
       Return[F,A](a)

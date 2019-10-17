@@ -11,6 +11,7 @@ object Deps {
 
   private lazy val cats = Seq(
     "org.typelevel" %% "cats-core" % Versions.cats,
+    "org.typelevel" %% "cats-free" % Versions.cats,
     "org.typelevel" %% "cats-effect" % Versions.cats
   )
 

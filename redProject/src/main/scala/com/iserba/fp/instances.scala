@@ -5,7 +5,7 @@ import com.iserba.fp.utils.{Monad, Par}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
-object impl {
+object instances {
   object FutureM {
     implicit def parFuture(implicit ec: ExecutionContext): Par[Future] =
       new Par[Future] {
