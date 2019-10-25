@@ -7,10 +7,14 @@ import com.iserba.fp.utils.StreamProcessHelper._
 import com.iserba.fp.utils.{Free, StreamProcess}
 import com.iserba.fp.{IO, RequestResponseChannel, ResponseStream}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.language.{higherKinds, implicitConversions}
 
 object algebra {
+  trait Converter[I,O] {
+    def convert: I => O
+  }
+
   sealed trait ServerAlg[T]
   case class ConnectClient() extends ServerAlg[RequestResponseChannel]
   type Server[T] = Free[ServerAlg, T]
@@ -31,8 +35,6 @@ object algebra {
 }
 
 object interpreters {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
   def clientToConnectionInterpreter: Translate[ClientAlg, Connection] = new (ClientAlg ~> Connection) {
     override def apply[A](f: ClientAlg[A]): Connection[A] = f match {
       case RunClient() =>
@@ -47,14 +49,12 @@ object interpreters {
     }
   }
 
-  import com.iserba.fp.parFIO
-  import parFIO.ioFMonad
-  def serverToFutureInterpreter: Translate[ServerAlg,Future]  = new (ServerAlg ~> Future) {
+
+  def serverToFutureInterpreter(implicit ec: ExecutionContext, converter: Converter[Request,Response]): Translate[ServerAlg,Future]  = new (ServerAlg ~> Future) {
     override def apply[A](f: ServerAlg[A]): Future[A] = f match {
       case ConnectClient() =>
         type Processor = Request => ResponseStream
-        type ResultStream = StreamProcess[IO, Processor]
-        def constantProcessor: ResultStream = constantF[IO, Processor](req => emit(Response(req.entity)))
+        def constantProcessor: StreamProcess[IO, Processor] = constantF[IO, Processor](req => emit(converter.convert(req))) // here logic to convert Event to Event
         def connectionChannel(): RequestResponseChannel =
           constantProcessor
         Future(connectionChannel())
