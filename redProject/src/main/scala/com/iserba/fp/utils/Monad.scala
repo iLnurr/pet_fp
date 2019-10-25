@@ -43,6 +43,7 @@ trait Monad[F[_]] extends Applicative[F] {
 }
 
 object Monad {
+  def apply[F[_]](implicit inst: Monad[F]): Monad[F] = inst
   trait Monadic[F[_],A] {
     val F: Monad[F]
     def get: F[A]

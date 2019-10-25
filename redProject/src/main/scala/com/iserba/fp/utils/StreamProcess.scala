@@ -187,6 +187,9 @@ object StreamProcessHelper {
   def constant[A](a: A): StreamProcess[IO,A] =
     eval(IO(a)).flatMap { a => Emit(a, constant(a)) }
 
+  def constantF[F[_]: Applicative,A](a: A): StreamProcess[F,A] =
+    eval(Applicative[F].unit(a)).flatMap { a => Emit(a, constantF(a)) }
+
   /*
  * Generic combinator for producing a `Process[IO,O]` from some
  * effectful `O` source. The source is tied to some resource,
@@ -206,10 +209,10 @@ object StreamProcessHelper {
   /*
      * Like `resource`, but `release` is a single `IO` action.
      */
-  def resource_[R,O](acquire: IO[R])(
-    use: R => StreamProcess[IO,O])(
-                      release: R => IO[Unit]): StreamProcess[IO,O] =
-    resource(acquire)(use)(release andThen (eval_[IO,Unit,O]))
+  def resource_[F[_],R,O](acquire: F[R])(
+    use: R => StreamProcess[F,O])(
+                      release: R => F[Unit]): StreamProcess[F,O] =
+    resource(acquire)(use)(release andThen (eval_[F,Unit,O]))
 
 
   /** PROCESS1 */
