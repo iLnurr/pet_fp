@@ -11,6 +11,8 @@ sealed trait Free[F[_],A] { self =>
     flatMap(f andThen (Return(_)))
   def runFree(implicit F: Monad[F]): F[A] =
     Free.run(self)
+  def foldMap[M[_]](f: Translate[F, M])(implicit M: Monad[M]): M[A] =
+    Free.runFree(this)(f)
 }
 object Free {
   case class Return[F[_],A](a: A) extends Free[F, A]
