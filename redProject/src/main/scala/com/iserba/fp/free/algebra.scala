@@ -62,7 +62,7 @@ object interpreters {
 
   class AlgInterpreter[Alg[_]](implicit monad: Monad[({type f[a] = Free[Alg, a]})#f]) {
     type FreeAlg[A] = Free[Alg,A]
-    def connectionToAlgInterpreter(serverConnections: Map[UUID, RequestResponseChannel] = Map())
+    def translate(serverConnections: Map[UUID, RequestResponseChannel] = Map())
     : Translate[ConnectionAlg, FreeAlg] =
       new (ConnectionAlg ~> FreeAlg) {
         override def apply[A](f: ConnectionAlg[A]): FreeAlg[A] = f match {
@@ -74,9 +74,6 @@ object interpreters {
             monad.unit(serverId -> channel)
         }
       }
-  }
-  object AlgInterpreter {
-    def apply[Alg[_]](implicit monad: Monad[({type f[a] = Free[Alg, a]})#f]): AlgInterpreter[Alg] = new AlgInterpreter[Alg]()
   }
 
   def clientToConnectionInterpreter: Translate[ClientAlg, Connection] = new (ClientAlg ~> Connection) {
@@ -92,6 +89,8 @@ object compilers {
     freeMonad[ConnectionAlg]
   implicit val serverFreeMonad: Monad[({type f[a] = Free[ServerAlg, a]})#f] =
     freeMonad[ServerAlg]
+  private val connectionToFutureInterpreter = new AlgInterpreter[Future]
+  private val connectionToServerInterpreter = new AlgInterpreter[ServerAlg]
 
   def runClientFree(serverId: UUID)
                    (implicit
@@ -99,15 +98,15 @@ object compilers {
                     ec: ExecutionContext): Future[RequestResponseChannel] =
     runClient(serverId)
       .foldMap(clientToConnectionInterpreter)
-      .foldMap(AlgInterpreter[Future].connectionToAlgInterpreter(serverConnections))
+      .foldMap(connectionToFutureInterpreter.translate(serverConnections))
       .runFree
 
   def runServerFree()(implicit ec: ExecutionContext): Future[(UUID, RequestResponseChannel)] =
     runServer()
       .foldMap(serverToConnectionInterpreter)
-      .foldMap(AlgInterpreter[ServerAlg].connectionToAlgInterpreter())
+      .foldMap(connectionToServerInterpreter.translate())
       .foldMap(serverToConnectionInterpreter)
-      .foldMap(AlgInterpreter[Future].connectionToAlgInterpreter())
+      .foldMap(connectionToFutureInterpreter.translate())
       .runFree.map(t => t.id -> t.channel)
 
   def makeRequest(request: Request, channel: RequestResponseChannel): Future[model.Response] = // TODO interpreter

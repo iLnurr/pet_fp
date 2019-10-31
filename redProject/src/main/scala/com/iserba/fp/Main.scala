@@ -16,7 +16,7 @@ object Main extends App {
 
   def checkFree(request: Request): Unit = {
     val (serverId, channel) = Await.result(runServerFree(), Duration.Inf)
-    implicit val pool: Map[UUID, RequestResponseChannel] = Map(serverId -> channel)
+    implicit val connections: Map[UUID, RequestResponseChannel] = Map(serverId -> channel)
 
     val checkResult = runClientFree(serverId).flatMap(makeRequest(request, _))
 
