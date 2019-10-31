@@ -11,7 +11,8 @@ import scala.concurrent.Future
 package object fp {
   type RequestStream = StreamProcess[IO,Request]
   type ResponseStream = StreamProcess[IO,Response]
-  type RequestResponseChannel = Channel[IO, Request, Response]
+  type ResponseStreamByRequest = Request => ResponseStream
+  type RequestResponseChannel = Channel[IO, Request, Response] //StreamProcess[IO, ResponseStreamByRequest]
 
   type ParF[+A] = Future[A]
   implicit val monadImpl: Monad[ParF] = instances.FutureM.monadFuture
