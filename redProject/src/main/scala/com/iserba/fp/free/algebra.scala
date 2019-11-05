@@ -8,7 +8,7 @@ import com.iserba.fp.model._
 import com.iserba.fp.utils.Free.{Translate, freeMonad, ~>}
 import com.iserba.fp.utils.StreamProcessHelper._
 import com.iserba.fp.utils.{Free, Monad}
-import com.iserba.fp.{IO, RequestResponseChannel, ResponseStreamByRequest, model}
+import com.iserba.fp._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.{higherKinds, implicitConversions}
@@ -19,17 +19,13 @@ object algebra {
   }
 
   sealed trait ServerAlg[T]
-  def createServerChannel(converter: Converter[Request,Response]): RequestResponseChannel =
-    constantF[IO, ResponseStreamByRequest](req =>
-      emit(converter.convert(req))
-    )
   case class RunServer() extends ServerAlg[ServerChannel]
   case class ServerChannel(id: UUID, channel: RequestResponseChannel) extends ServerAlg[(UUID, RequestResponseChannel)]
   type Server[T] = Free[ServerAlg, T]
   def runServer(): Server[ServerChannel] =
     Free.liftF(RunServer())
   def serverChannel(id: UUID): Server[(UUID, RequestResponseChannel)] =
-    Free.liftF(ServerChannel(id, createServerChannel(impl.dummyLogic)))
+    Free.liftF(ServerChannel(id, createServerChannel(dummyLogic)))
 
   sealed trait ConnectionAlg[T]
   case class ClientConnect(serverId: UUID) extends ConnectionAlg[RequestResponseChannel]
@@ -69,7 +65,7 @@ object interpreters {
           case ClientConnect(serverId) =>
             monad.unit(serverConnections(serverId))
           case RegisterServer(serverId) =>
-            monad.unit(ServerChannel(serverId, createServerChannel(impl.dummyLogic)))
+            monad.unit(ServerChannel(serverId, createServerChannel(dummyLogic)))
           case ServerConnect(serverId, channel) =>
             monad.unit(serverId -> channel)
         }
@@ -115,11 +111,5 @@ object compilers {
       .runStreamProcess
       .map(_.head)
       .runFree
-}
-
-object impl {
-  val dummyLogic: Converter[Request, Response] = new Converter[Request, Response] {
-    def convert: Request => Response = req => Response(req.entity.map(ev => ev.copy(ts = ev.ts * 2)))
-  }
 }
 

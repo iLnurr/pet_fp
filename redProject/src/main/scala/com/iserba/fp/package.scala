@@ -1,8 +1,10 @@
 package com.iserba
 
+import com.iserba.fp.free.algebra.Converter
 import com.iserba.fp.model.Request
 import com.iserba.fp.model.Response
 import com.iserba.fp.utils.StreamProcess.Channel
+import com.iserba.fp.utils.StreamProcessHelper.{constantF, emit}
 import com.iserba.fp.utils.{Free, IOWrap, Monad, StreamProcess}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -13,6 +15,14 @@ package object fp {
   type ResponseStream = StreamProcess[IO,Response]
   type ResponseStreamByRequest = Request => ResponseStream
   type RequestResponseChannel = Channel[IO, Request, Response] //StreamProcess[IO, ResponseStreamByRequest]
+
+  def createServerChannel(converter: Converter[Request,Response]): RequestResponseChannel =
+    constantF[IO, ResponseStreamByRequest](req =>
+      emit(converter.convert(req))
+    )
+  val dummyLogic: Converter[Request, Response] = new Converter[Request, Response] {
+    def convert: Request => Response = req => Response(req.entity.map(ev => ev.copy(ts = ev.ts * 2)))
+  }
 
   type ParF[+A] = Future[A]
   implicit val monadImpl: Monad[ParF] = instances.FutureM.monadFuture
