@@ -11,10 +11,6 @@ import scala.collection.mutable
 import scala.concurrent.Future
 
 object algebra {
-  trait Converter[I,O] {
-    def convert: I => O
-  }
-
   trait ServerAlg[F[_]] {
     def runServer()(implicit conn: ConnectionAlg[F]): F[(UUID, RequestResponseChannel)]
   }

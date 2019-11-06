@@ -14,10 +14,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.{higherKinds, implicitConversions}
 
 object algebra {
-  trait Converter[I,O] {
-    def convert: I => O
-  }
-
   sealed trait ServerAlg[T]
   case class RunServer() extends ServerAlg[ServerChannel]
   case class ServerChannel(id: UUID, channel: RequestResponseChannel) extends ServerAlg[(UUID, RequestResponseChannel)]
@@ -88,6 +84,7 @@ object compilers {
   private val connectionToFutureInterpreter = new AlgInterpreter[Future]
   private val connectionToServerInterpreter = new AlgInterpreter[ServerAlg]
 
+  // RunClient -> ClientConnect -> (serverChannel)
   def runClientFree(serverId: UUID)
                    (implicit
                     serverConnections: Map[UUID, RequestResponseChannel],
@@ -97,6 +94,7 @@ object compilers {
       .foldMap(connectionToFutureInterpreter.translate(serverConnections))
       .runFree
 
+  // RunServer -> RegisterServer -> ServerChannel -> ServerConnect -> (serverId, serverChannel)
   def runServerFree()(implicit ec: ExecutionContext): Future[(UUID, RequestResponseChannel)] =
     runServer()
       .foldMap(serverToConnectionInterpreter)

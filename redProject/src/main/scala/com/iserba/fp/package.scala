@@ -1,6 +1,5 @@
 package com.iserba
 
-import com.iserba.fp.free.algebra.Converter
 import com.iserba.fp.model.Request
 import com.iserba.fp.model.Response
 import com.iserba.fp.utils.StreamProcess.Channel
