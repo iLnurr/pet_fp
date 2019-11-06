@@ -48,8 +48,7 @@ object State {
       }
   }
 
-  import cats.implicits._
-
+  import cats.syntax.functor._
   case class ConnectedClients[F[_] : Sync](val ref: Ref[F, Map[UUID, Client[F]]]) extends Clients[F] {
     def register(state: Client[F]): F[Client[F]] = {
       println(s"ConnectedClients: Register $state")

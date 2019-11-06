@@ -8,7 +8,8 @@ package object fs2ws {
   type MsgStreamPipe[F[_]] = Pipe[F,Message, Message]
   type CorePipe[F[_]] = Pipe[F, Frame[String], Frame[String]]
 
-  import cats.implicits._
+  import cats.syntax.functor._
+  import cats.instances.function._
   def convert[F[_]](encode: Message => F[String],
                     decode: String => F[Message],
                     msgStreamPipe: MsgStreamPipe[F]): CorePipe[F] =
