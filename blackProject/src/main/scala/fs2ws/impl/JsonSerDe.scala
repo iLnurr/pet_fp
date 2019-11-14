@@ -3,7 +3,7 @@ package fs2ws.impl
 import cats.effect.IO
 import fs2ws.Domain._
 import fs2ws.{JsonDecoder, JsonEncoder}
-import io.circe.generic.auto._
+import io.circe.generic.extras.auto._
 import io.circe.generic.extras.Configuration
 import io.circe.parser._
 import io.circe.syntax._

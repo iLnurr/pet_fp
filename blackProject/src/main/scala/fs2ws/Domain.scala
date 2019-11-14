@@ -1,8 +1,5 @@
 package fs2ws
 
-import io.circe.generic.extras.Configuration
-
-
 object Domain {
   object MsgTypes {
     val LOGIN = "login"
@@ -24,7 +21,7 @@ object Domain {
     val REMOVAL_FAILED = "removal_failed"
     val TABLE_REMOVED = "table_removed"
   }
-  implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("type")
+
   sealed trait Message {
     def $type: String
   }
