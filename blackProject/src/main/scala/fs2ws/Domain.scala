@@ -22,12 +22,8 @@ object Domain {
     val TABLE_REMOVED = "table_removed"
   }
 
-  sealed trait Message {
-    def $type: String
-  }
-  case object EmptyMsg extends Message {
-    override def $type: String = "empty"
-  }
+  sealed trait Message
+  case object empty extends Message
 
   sealed trait AuthMsg extends Message
   sealed trait PrivilegedCommands extends Message // Only admins are allowed to use these commands
@@ -35,29 +31,29 @@ object Domain {
   sealed trait PingMsg extends Message {
     def seq: Long
   }
-  case class NotAuthorized($type: String = "not_authorized") extends Message
+  case class not_authorized() extends Message
 
-  case class AuthReq(username: String, password: String, $type: String = "login") extends AuthMsg
-  case class AuthFailResp($type: String = "login_failed") extends AuthMsg
-  case class AuthSuccessResp(user_type: String, $type: String = "login_successful") extends AuthMsg
+  case class login(username: String, password: String) extends AuthMsg
+  case class login_failed() extends AuthMsg
+  case class login_successful(user_type: String) extends AuthMsg
 
-  case class AddTableReq(after_id: Long, table: Table, $type: String = "add_table") extends TableMsg with PrivilegedCommands
-  case class UpdateTableReq(table: Table, $type: String = "update_table") extends TableMsg with PrivilegedCommands
-  case class RemoveTableReq(id: Long, $type: String = "remove_table") extends TableMsg with PrivilegedCommands
+  case class add_table(after_id: Long, table: Table) extends TableMsg with PrivilegedCommands
+  case class update_table(table: Table) extends TableMsg with PrivilegedCommands
+  case class remove_table(id: Long) extends TableMsg with PrivilegedCommands
 
-  case class SubscribeTables($type: String = "subscribe_tables") extends TableMsg
-  case class TableList(tables: Seq[Table], $type: String = "table_list") extends TableMsg
-  case class UnsubscribeTables($type: String = "unsubscribe_tables") extends TableMsg
+  case class subscribe_tables() extends TableMsg
+  case class table_list(tables: Seq[Table]) extends TableMsg
+  case class unsubscribe_tables() extends TableMsg
 
-  case class UpdateTableFailResponse(id: Long, $type: String = "update_failed") extends TableMsg
-  case class RemoveTableFailResponse(id: Long, $type: String = "removal_failed") extends TableMsg
-  case class AddTableResponse(after_id: Long, table: Table, $type: String = "table_added") extends TableMsg
-  case class AddTableFailResponse(after_id: Long, $type: String = "add_failed") extends TableMsg
-  case class RemoveTableResponse(id: Long, $type: String = "table_removed") extends TableMsg
-  case class UpdateTableResponse(table: Table, $type: String = "table_updated") extends TableMsg
+  case class update_failed(id: Long) extends TableMsg
+  case class removal_failed(id: Long) extends TableMsg
+  case class table_added(after_id: Long, table: Table) extends TableMsg
+  case class add_failed(after_id: Long) extends TableMsg
+  case class table_removed(id: Long) extends TableMsg
+  case class table_updated(table: Table) extends TableMsg
 
-  case class PingReq(seq: Long, $type: String = "ping") extends PingMsg
-  case class PongResponse(seq: Long, $type: String = "pong") extends PingMsg
+  case class ping(seq: Long) extends PingMsg
+  case class pong(seq: Long) extends PingMsg
 
 
   sealed trait DBEntity {
@@ -70,6 +66,4 @@ object Domain {
     val ADMIN = "admin"
     val USER = "user"
   }
-
-  case class Msg($type: String) extends Message
 }

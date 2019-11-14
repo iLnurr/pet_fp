@@ -17,29 +17,9 @@ object JsonSerDe {
   }
   implicit val incomingMessageDecoder: JsonDecoder[IO, Message] = new JsonDecoder[IO, Message] {
     override def fromJson(json: String): IO[Message] =
-      for {
-        msg <- handleError(decode[Msg](json))
-        result <- handleError(msg.$type match {
-          case MsgTypes.LOGIN =>
-            decode[AuthReq](json)
-          case MsgTypes.ADD_TABLE =>
-            decode[AddTableReq](json)
-          case MsgTypes.UPDATE_TABLE =>
-            decode[UpdateTableReq](json)
-          case MsgTypes.REMOVE_TABLE =>
-            decode[RemoveTableReq](json)
-          case MsgTypes.PING =>
-            decode[PingReq](json)
-          case MsgTypes.SUBSCRIBE_TABLE =>
-            decode[SubscribeTables](json)
-          case MsgTypes.UNSUBSCRIBE_TABLE =>
-            decode[UnsubscribeTables](json)
-        })
-      } yield {
-        result
-      }
+      handleError(decode[Message](json))
   }
-  implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("type")
+  implicit val genDevConfig: Configuration = Configuration.default.withDiscriminator("$type")
   implicit def encoder: JsonEncoder[IO, Message] = new JsonEncoder[IO, Message] {
     override def toJson(value: Message): IO[String] =
       IO.pure(value.asJson.noSpaces)

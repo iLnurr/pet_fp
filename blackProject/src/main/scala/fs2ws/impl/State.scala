@@ -33,15 +33,15 @@ object State {
 
     def updateState(message: Message): Client[F] =
       message match {
-        case _: SubscribeTables =>
+        case _: subscribe_tables =>
           copy(subscribed = true)
-        case _: UnsubscribeTables =>
+        case _: unsubscribe_tables =>
           copy(subscribed = false)
-        case AuthReq(un, _, _) =>
+        case login(un, _) =>
           copy(username = Some(un))
-        case AuthSuccessResp(user_type, _) =>
+        case login_successful(user_type) =>
           copy(userType = Some(user_type))
-        case _: AuthFailResp =>
+        case _: login_failed =>
           Client(id) // clear username, userType, subscribed info
         case _ =>
           this

@@ -12,7 +12,7 @@ class ServerImpl(val clients: Clients[IO],
   extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
   override def handler: (Message,Client[IO]) => IO[Message] = (req, clientState) =>
     if (req.isInstanceOf[PrivilegedCommands] && !clientState.privileged) {
-      IO.pure(NotAuthorized())
+      IO.pure(not_authorized())
     } else {
       Services.handleReq(req)
     }
@@ -47,7 +47,7 @@ class ServerImpl(val clients: Clients[IO],
 
   private def updateState(clients: Clients[IO], clientState: Client[IO], request: Message , response: Message): IO[Unit] = {
     response match {
-      case _: AddTableResponse | _: UpdateTableResponse | _: RemoveTableResponse =>
+      case _: table_added | _: table_updated | _: table_removed =>
         Services.tableList
           .flatMap { tableList =>
             clients.broadcast(tableList, _.subscribed)

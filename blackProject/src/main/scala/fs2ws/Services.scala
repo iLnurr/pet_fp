@@ -12,24 +12,24 @@ import scala.util.Try
 object Services {
   def handleReq: Message => IO[Message] = {
     case msg: AuthMsg => msg match {
-      case ar: AuthReq =>
+      case ar: login =>
         auth(ar)
       case _ =>
         IO.raiseError(new RuntimeException(s"Can't handle $msg"))
     }
     case commands: PrivilegedCommands => commands match {
-      case addTableReq: AddTableReq =>
+      case addTableReq: add_table =>
         tables(addTableReq)
-      case updateTableReq: UpdateTableReq =>
+      case updateTableReq: update_table =>
         tables(updateTableReq)
-      case removeTableReq: RemoveTableReq =>
+      case removeTableReq: remove_table =>
         tables(removeTableReq)
     }
     case msg: TableMsg =>
       tables(msg)
     case msg: PingMsg => msg match {
-      case pr: PingReq =>
-        ping(pr)
+      case pr: ping =>
+        pingF(pr)
       case _ =>
         IO.raiseError(new RuntimeException(s"Can't handle $msg"))
     }
@@ -37,45 +37,45 @@ object Services {
       IO.raiseError(new RuntimeException(s"Can't handle $msg"))
   }
 
-  def tableList: IO[TableList] =
-    Tables.list.map(seq => TableList(seq))
+  def tableList: IO[table_list] =
+    Tables.list.map(seq => table_list(seq))
 
-  private def auth: AuthReq => IO[Message] = ar =>
+  private def auth: login => IO[Message] = ar =>
     Users.getByName(ar.username).map {
       case Some(user) if ar.password == user.password =>
-        AuthSuccessResp(user.user_type)
+        login_successful(user.user_type)
       case _ =>
-        AuthFailResp()
+        login_failed()
     }
 
-  private def ping: PingReq => IO[Message] = req =>
-    IO.pure(PongResponse(req.seq))
+  private def pingF: ping => IO[Message] = req =>
+    IO.pure(pong(req.seq))
 
   private def tables: TableMsg => IO[Message] = {
-    case SubscribeTables(_) =>
+    case subscribe_tables() =>
       tableList
-    case _:UnsubscribeTables =>
-      IO.pure(EmptyMsg)
-    case AddTableReq(after_id, table, _) =>
+    case _:unsubscribe_tables =>
+      IO.pure(empty)
+    case add_table(after_id, table) =>
       Tables.add(after_id, table).map {
         case Left(_) =>
-          AddTableFailResponse(after_id)
+          add_failed(after_id)
         case Right(inserted) =>
-          AddTableResponse(after_id,inserted)
+          table_added(after_id,inserted)
       }
-    case UpdateTableReq(table, _) =>
+    case update_table(table) =>
       Tables.update(table).map {
         case Left(_) =>
-          UpdateTableFailResponse(table.id.getOrElse(-1L))
+          update_failed(table.id.getOrElse(-1L))
         case Right(_) =>
-          UpdateTableResponse(table)
+          table_updated(table)
       }
-    case RemoveTableReq(id, _) =>
+    case remove_table(id) =>
       Tables.remove(id).map {
         case Left(_) =>
-          RemoveTableFailResponse(id)
+          removal_failed(id)
         case Right(_) =>
-          RemoveTableResponse(id)
+          table_removed(id)
       }
     case other =>
       IO.raiseError(new RuntimeException(s"Bad request: $other"))
