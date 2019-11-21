@@ -17,10 +17,10 @@ object Main extends IOApp {
     } yield {
       ExitCode.Success
     }).handleErrorWith(
-        ex =>
-          IO {
-            println(s"Server stopped with error ${ex.getLocalizedMessage}")
-            ExitCode.Error
-          }
-      )
+      ex =>
+        IO {
+          println(s"Server stopped with error ${ex.getLocalizedMessage}")
+          ExitCode.Error
+        }
+    )
 }

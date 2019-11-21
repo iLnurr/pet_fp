@@ -11,7 +11,7 @@ object Deps {
 
     val circe         = "0.11.1"
     val fs2_http      = "0.4.0"
-    val http4sVersion = "0.20"
+    val http4sVersion = "0.20.13"
 
     val doobieVersion  = "0.8.6"
     val mysqlConnector = "8.0.18"
@@ -68,7 +68,9 @@ object Deps {
   )
 
   private lazy val http4s = Seq(
-    "org.http4s" %% "http4s-dsl" % Versions.http4sVersion
+    "org.http4s" %% "http4s-dsl"          % Versions.http4sVersion,
+    "org.http4s" %% "http4s-blaze-server" % Versions.http4sVersion,
+    "org.http4s" %% "http4s-blaze-client" % Versions.http4sVersion
   )
 
   private lazy val doobie = Seq(
