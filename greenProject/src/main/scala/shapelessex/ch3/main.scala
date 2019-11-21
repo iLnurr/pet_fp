@@ -7,7 +7,7 @@ object main extends App {
   def check[A](l: List[A])(implicit enc: MyTC[A]): List[A] = {
     val res = l
       .map { a =>
-        enc.to(a.tapPrintln()).tapPrintln()
+        enc.to(a.tapPrintln())
       }
       .map { b =>
         enc.from(b).tapPrintln()
