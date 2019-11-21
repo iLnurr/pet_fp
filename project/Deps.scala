@@ -73,6 +73,7 @@ object Deps {
 
   private lazy val doobie = Seq(
     "org.tpolecat" %% "doobie-core"      % Versions.doobieVersion,
+    "org.tpolecat" %% "doobie-h2"        % Versions.doobieVersion,
     "org.tpolecat" %% "doobie-hikari"    % Versions.doobieVersion, // HikariCP transactor.
     "org.tpolecat" %% "doobie-specs2"    % Versions.doobieVersion % "test", // Specs2 support for typechecking statements.
     "org.tpolecat" %% "doobie-scalatest" % Versions.doobieVersion % "test" // ScalaTest support for typechecking statements.
