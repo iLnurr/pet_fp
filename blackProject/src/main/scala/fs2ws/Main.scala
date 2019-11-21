@@ -7,18 +7,20 @@ import fs2ws.impl.State.ConnectedClients
 
 object Main extends IOApp {
   implicit val ce: ConcurrentEffect[IO] = IO.ioConcurrentEffect
-  override def run(args: List[String]): IO[ExitCode] = {
+  override def run(args: List[String]): IO[ExitCode] =
     (for {
       clients <- ConnectedClients.create[IO]
-      _ <- new ServerImpl(clients, startMsgStream(encoder.toJson, incomingMessageDecoder.fromJson, _)).start()
+      _ <- new ServerImpl(
+        clients,
+        startMsgStream(encoder.toJson, incomingMessageDecoder.fromJson, _)
+      ).start()
     } yield {
       ExitCode.Success
-    })
-      .handleErrorWith(ex =>
-        IO {
-          println(s"Server stopped with error ${ex.getLocalizedMessage}")
-          ExitCode.Error
-        }
+    }).handleErrorWith(
+        ex =>
+          IO {
+            println(s"Server stopped with error ${ex.getLocalizedMessage}")
+            ExitCode.Error
+          }
       )
-  }
 }

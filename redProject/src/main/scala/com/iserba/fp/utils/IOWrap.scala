@@ -8,41 +8,43 @@ import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
 
 trait IOWrap[F[_]] {
-  type IO[A] = Free[F,A]
+  type IO[A] = Free[F, A]
   implicit def parF: Par[F]
-  implicit val ioFMonad: Monad[({type f[a] = Free[F, a]})#f] = Free.freeMonad[F]
-  implicit val ioMC: MonadCatch[({type f[a] = Free[F, a]})#f] = new MonadCatch[({type f[a] = Free[F, a]})#f] {
-    def attempt[A](a: Free[F, A]): Free[F, Either[Throwable, A]] = {
-      Try(
-        parF.parRun(
-          Free.run(a)
-        )
-      ) match {
-        case Success(aa) =>
-          IO(Right[Throwable,A](aa))
-        case Failure(exception) =>
-          IO(Left[Throwable,A](exception))
-      }
+  implicit val ioFMonad: Monad[({ type f[a] = Free[F, a] })#f] =
+    Free.freeMonad[F]
+  implicit val ioMC: MonadCatch[({ type f[a] = Free[F, a] })#f] =
+    new MonadCatch[({ type f[a] = Free[F, a] })#f] {
+      def attempt[A](a: Free[F, A]): Free[F, Either[Throwable, A]] =
+        Try(
+          parF.parRun(
+            Free.run(a)
+          )
+        ) match {
+          case Success(aa) =>
+            IO(Right[Throwable, A](aa))
+          case Failure(exception) =>
+            IO(Left[Throwable, A](exception))
+        }
 
+      def fail[A](t: Throwable): Free[F, A] =
+        throw t
+      override def unit[A](a: => A): Free[F, A] =
+        Return(a)
+      override def flatMap[A, B](
+        a: Free[F, A]
+      )(f: A => Free[F, B]): Free[F, B] =
+        a.flatMap(f)
     }
-    def fail[A](t: Throwable): Free[F, A] =
-      throw t
-    override def unit[A](a: => A): Free[F, A] =
-      Return(a)
-    override def flatMap[A, B](a: Free[F, A])(f: A => Free[F, B]): Free[F, B] = {
-      a.flatMap(f)
-    }
-  }
   def IO[A](a: => A): IO[A] =
     Suspend { parF.delay(a) }
   def now[A](a: A): IO[A] =
     Return(a)
   def fork[A](a: => IO[A]): IO[A] =
-    fa(parF.lazyUnit(())) flatMap (_ => a)
+    fa(parF.lazyUnit(())).flatMap(_ => a)
   def forkUnit[A](a: => A): IO[A] =
     fork(now(a))
   def delay[A](a: => A): IO[A] =
-    now(()) flatMap (_ => now(a))
+    now(()).flatMap(_ => now(a))
   def fa[A](a: F[A]): IO[A] =
     Suspend(a)
   def async[A](cb: ((A => Unit) => Unit)): IO[A] =

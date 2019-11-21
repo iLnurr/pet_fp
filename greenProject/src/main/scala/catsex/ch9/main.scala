@@ -19,7 +19,7 @@ object main extends App {
   val future1: Future[Int] =
     parallelFoldMap1((1 to 1000).toVector)(_ * 1000)
   val future2: Future[Int] =
-    parallelFoldMap2[Future, Int,Int]((1 to 1000).toVector)(_ * 1000)
+    parallelFoldMap2[Future, Int, Int]((1 to 1000).toVector)(_ * 1000)
   Await.result(future1, 1.second).println()
   // res3: Int = 500500000
 

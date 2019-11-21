@@ -23,7 +23,7 @@ object IOTest extends App {
 
   assert(result == 4)
 }
-object Helper{
+object Helper {
   implicit class FtoA[A](val f: Future[A]) extends AnyVal {
     def await: A = Await.result(f, 2.seconds)
   }

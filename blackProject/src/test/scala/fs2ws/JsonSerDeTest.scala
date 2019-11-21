@@ -3,10 +3,9 @@ package fs2ws
 import fs2ws.Domain.{login, login_successful}
 import fs2ws.impl.JsonSerDe._
 
-
 object JsonSerDeTest extends App {
   val authReq = login(username = "un", password = "pwd")
-  val json = encoder.toJson(authReq).unsafeRunSync()
+  val json    = encoder.toJson(authReq).unsafeRunSync()
   println(s"encoded $json ")
 
   println(incomingMessageDecoder.fromJson(json).unsafeRunSync())

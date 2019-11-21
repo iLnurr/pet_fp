@@ -9,7 +9,6 @@ trait UptimeClient[F[_]] {
 }
 abstract class UptimeService[F[_]: Applicative] {
   def client: UptimeClient[F]
-  def getTotalUptime(hostnames: List[String]): F[Int] = {
+  def getTotalUptime(hostnames: List[String]): F[Int] =
     Functor[F].map(hostnames.traverse(client.getUptime))(_.sum)
-  }
 }

@@ -10,10 +10,10 @@ object main extends App {
   val g2 = Map("a" -> 2, "b" -> 5)
 
   val counter = GCounter[Map, String, Int]
-  val merged = counter.merge(g1, g2)
+  val merged  = counter.merge(g1, g2)
   merged.println()
   // merged: Map[String,Int] = Map(a -> 7, b -> 5)
-  val total  = counter.total(merged)(intSumCM)
+  val total = counter.total(merged)(intSumCM)
   total.println()
   // total: Int = 12
 

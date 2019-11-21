@@ -11,22 +11,24 @@ object domain {
   sealed trait BinaryTree[+A]
   object BinaryTree {
     def branch[A](left: BinaryTree[A], right: BinaryTree[A]): BinaryTree[A] =
-      BinaryBranch(left,right)
+      BinaryBranch(left, right)
     def leaf[A](a: A): BinaryTree[A] =
       BinaryLeaf(a)
   }
-  final case class BinaryBranch[A](left: BinaryTree[A], right: BinaryTree[A]) extends BinaryTree[A]
+  final case class BinaryBranch[A](left: BinaryTree[A], right: BinaryTree[A])
+      extends BinaryTree[A]
   final case class BinaryLeaf[A](value: A) extends BinaryTree[A]
 
   import cats.instances.vector._
   sealed trait Tree[+T] {
     def headOption: Option[T]
-    def isEmpty: Boolean
+    def isEmpty:    Boolean
     def traverse[F[_]: Applicative, B](f: T => F[B]): F[Tree[B]] = this match {
       case NonEmptyTree(head, children) =>
         val h: F[B] = f(head)
-        val ch: F[Vector[Tree[B]]] = Traverse[Vector].traverse(children)(_.traverse(f))
-        Applicative[F].map2(h, ch)(Tree(_,_))
+        val ch: F[Vector[Tree[B]]] =
+          Traverse[Vector].traverse(children)(_.traverse(f))
+        Applicative[F].map2(h, ch)(Tree(_, _))
       case EmptyTree =>
         Applicative[F].pure(Tree())
     }
@@ -34,27 +36,31 @@ object domain {
 
   object Tree {
     def apply[T](): Tree[T] = EmptyTree
-    def apply[T](head: T, children: Vector[Tree[T]]): Tree[T] = NonEmptyTree(head, children)
-    def apply[T](head: T, children: Tree[T]*): Tree[T] = NonEmptyTree(head, children.toVector)
+    def apply[T](head: T, children: Vector[Tree[T]]): Tree[T] =
+      NonEmptyTree(head, children)
+    def apply[T](head: T, children: Tree[T]*): Tree[T] =
+      NonEmptyTree(head, children.toVector)
 
     def unapply[T](tree: Tree[T]): Option[(T, Vector[Tree[T]])] = tree match {
       case NonEmptyTree(head, children) => Some((head, children))
-      case EmptyTree => None
+      case EmptyTree                    => None
     }
   }
 
-  case class NonEmptyTree[+T](head: T, children: Vector[Tree[T]]) extends Tree[T] {
+  case class NonEmptyTree[+T](head: T, children: Vector[Tree[T]])
+      extends Tree[T] {
     def headOption: Some[T] = Some(head)
     def isEmpty = false
   }
 
   object NonEmptyTree {
-    def apply[T](head: T, children: Tree[T]*): NonEmptyTree[T] = NonEmptyTree(head, children.toVector)
+    def apply[T](head: T, children: Tree[T]*): NonEmptyTree[T] =
+      NonEmptyTree(head, children.toVector)
   }
 
   case object EmptyTree extends Tree[Nothing] {
     def headOption = None
-    def isEmpty = true
+    def isEmpty    = true
   }
 
   final case class Box[A](value: A)
@@ -63,7 +69,7 @@ object domain {
   type Result[A] = Either[Throwable, A] // 1 way
 
   sealed trait LoginError extends Product with Serializable // 2 way
-  final case class UserNotFound(username: String) extends LoginError
+  final case class UserNotFound(username:      String) extends LoginError
   final case class PasswordIncorrect(username: String) extends LoginError
   case object UnexpectedError extends LoginError
   case class UserLogin(username: String, password: String)
@@ -87,25 +93,21 @@ object domain {
   //4.8
   import cats.syntax.applicative._
   case class Db(
-                 usernames: Map[Int, String],
-                 passwords: Map[String, String]
-               )
+    usernames: Map[Int, String],
+    passwords: Map[String, String]
+  )
   type DbReader[T] = Reader[Db, T]
   object DbReader {
     def apply[T](function: Db => T): DbReader[T] =
-      Reader[Db,T](db => function(db))
+      Reader[Db, T](db => function(db))
     def empty[T](t: T): DbReader[T] =
       t.pure[DbReader]
   }
   def findUsername(userId: Int): DbReader[Option[String]] =
     DbReader(_.usernames.get(userId))
-  def checkPassword(
-                     username: String,
-                     password: String): DbReader[Boolean] =
+  def checkPassword(username: String, password: String): DbReader[Boolean] =
     DbReader(_.passwords.get(username).contains(password))
-  def checkLogin(
-                  userId: Int,
-                  password: String): DbReader[Boolean] =
+  def checkLogin(userId: Int, password: String): DbReader[Boolean] =
     findUsername(userId).flatMap {
       case Some(username) =>
         checkPassword(username, password)
@@ -118,13 +120,13 @@ object domain {
   import cats.syntax.either._
 
   case class User(name: String, age: Int)
-  type FormData = Map[String, String]
+  type FormData    = Map[String, String]
   type FailFast[A] = Either[List[String], A]
   type FailSlow[A] = Validated[List[String], A]
 
   def readName(m: FormData): FailFast[String] =
     (m.get("name") match {
-      case Some(value) if value.isEmpty=>
+      case Some(value) if value.isEmpty =>
         List("Name is blank").invalid[String]
       case Some(name) =>
         name.valid
@@ -147,12 +149,12 @@ object domain {
     }).toEither
 
   import cats.instances.list._ // for Semigroupal
-  import cats.syntax.apply._   // for mapN
+  import cats.syntax.apply._ // for mapN
   def readUser(m: FormData): FailSlow[User] =
     (
       readName(m).toValidated,
       readAge(m).toValidated
-      ).mapN(
+    ).mapN(
       User.apply
     )
 }

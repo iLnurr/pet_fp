@@ -5,7 +5,12 @@ import java.util.concurrent.atomic.AtomicReference
 
 import com.iserba.fp.{RequestResponseChannel, _}
 import com.iserba.fp.model.{Request, Response}
-import com.iserba.fp.tagless.algebra.{ChannelOnDemand, ClientAlg, ConnectionAlg, ServerAlg}
+import com.iserba.fp.tagless.algebra.{
+  ChannelOnDemand,
+  ClientAlg,
+  ConnectionAlg,
+  ServerAlg
+}
 
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -23,7 +28,9 @@ object algebra {
 
   trait ClientAlg[F[_]] {
     def runClient(serverId: UUID)(implicit conn: ConnectionAlg[F]): F[Unit]
-    def makeRequest(r: Request)(implicit conn: ConnectionAlg[F]): F[Option[Response]]
+    def makeRequest(r:      Request)(
+      implicit conn:        ConnectionAlg[F]
+    ): F[Option[Response]]
   }
 }
 
@@ -34,7 +41,7 @@ object impl {
     private val serverConnections = mutable.Map[UUID, ChannelOnDemand]()
 
     override def registerServer(): ParF[(UUID, ChannelOnDemand)] = {
-      val id = UUID.randomUUID()
+      val id              = UUID.randomUUID()
       val channelToServer = () => createServerChannel(dummyLogic)
       serverConnections.update(id, channelToServer)
       Future.successful(id -> channelToServer)
@@ -43,24 +50,30 @@ object impl {
     override def registerClient(serverId: UUID): ParF[RequestResponseChannel] =
       Future.successful(serverConnections(serverId)())
   }
-  val serverImpl = new ServerAlg[Future]{
-    override def runServer()(implicit conn: ConnectionAlg[ParF]): ParF[(UUID, ChannelOnDemand)] =
+  val serverImpl = new ServerAlg[Future] {
+    override def runServer()(
+      implicit conn: ConnectionAlg[ParF]
+    ): ParF[(UUID, ChannelOnDemand)] =
       conn.registerServer()
   }
-  val clientImpl = new ClientAlg[Future]{
-    private val channelRef = new AtomicReference[Option[RequestResponseChannel]](None)
-    override def runClient(serverId: UUID)(implicit conn: ConnectionAlg[ParF]): ParF[Unit] =
-      conn.registerClient(serverId).map{channel =>
+  val clientImpl = new ClientAlg[Future] {
+    private val channelRef =
+      new AtomicReference[Option[RequestResponseChannel]](None)
+    override def runClient(
+      serverId:      UUID
+    )(implicit conn: ConnectionAlg[ParF]): ParF[Unit] =
+      conn.registerClient(serverId).map { channel =>
         channelRef.set(Some(channel))
       }
 
-    override def makeRequest(r: Request)(implicit conn: ConnectionAlg[ParF]): ParF[Option[Response]] = {
+    override def makeRequest(
+      r:             Request
+    )(implicit conn: ConnectionAlg[ParF]): ParF[Option[Response]] =
       Future {
         channelRef.get().map { channel =>
           val io = emit(r).through(channel).runStreamProcess
           parFIO.unsafePerformIO(io).head
         }
       }
-    }
   }
 }

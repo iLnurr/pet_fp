@@ -7,7 +7,7 @@ import catsex.ch10.algebra.Predicate
 import catsex.ch10.impl.Errors // for Monad
 
 object kleisliimpl {
-  type Result[A] = Either[Errors, A]
+  type Result[A]   = Either[Errors, A]
   type Check[A, B] = Kleisli[Result, A, B]
   // Create a check from a function:
   def check[A, B](func: A => Result[B]): Check[A, B] =
@@ -19,7 +19,7 @@ object kleisliimpl {
   import impl._
   //Now rewrite our username and email valida􏰀on example in terms of Kleisli and Predicate.
   def checkUsername: Check[String, String] =
-    checkPred(longerThan(3) and alphanumeric)
+    checkPred(longerThan(3).and(alphanumeric))
 
   val splitEmail: Check[String, (String, String)] =
     check(_.split('@') match {
@@ -33,7 +33,7 @@ object kleisliimpl {
     checkPred(longerThan(0))
 
   val checkRight: Check[String, String] =
-    checkPred(longerThan(3) and contains('.'))
+    checkPred(longerThan(3).and(contains('.')))
 
   val joinEmail: Check[(String, String), String] =
     check {
@@ -41,11 +41,9 @@ object kleisliimpl {
         (checkLeft(l), checkRight(r)).mapN(_ + "@" + _)
     }
   val checkEmail: Check[String, String] =
-    splitEmail andThen joinEmail
+    splitEmail.andThen(joinEmail)
 
-  def createUser(username: String,
-                 email: String): Either[Errors, User] = (
-    checkUsername.run(username),
-    checkEmail.run(email)).mapN(User)
+  def createUser(username: String, email: String): Either[Errors, User] =
+    (checkUsername.run(username), checkEmail.run(email)).mapN(User)
 
 }

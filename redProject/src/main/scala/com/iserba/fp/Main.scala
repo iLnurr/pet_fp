@@ -16,7 +16,9 @@ object Main extends App {
 
   def checkFree(request: Request): Unit = {
     val (serverId, channel) = Await.result(runServerFree(), Duration.Inf)
-    implicit val connections: Map[UUID, RequestResponseChannel] = Map(serverId -> channel)
+    implicit val connections: Map[UUID, RequestResponseChannel] = Map(
+      serverId -> channel
+    )
 
     val checkResult = runClientFree(serverId).flatMap(makeRequest(request, _))
 
@@ -25,9 +27,17 @@ object Main extends App {
   }
 
   def checkTF(request: Request): Unit = {
-    val (serverId, channel@_) = Await.result(serverImpl.runServer(), Duration.Inf)
-    val response = Await.result(clientImpl.runClient(serverId).flatMap(_ => clientImpl.makeRequest(request)), Duration.Inf).get
-    checkResponse(response,request)
+    val (serverId, channel @ _) =
+      Await.result(serverImpl.runServer(), Duration.Inf)
+    val response = Await
+      .result(
+        clientImpl
+          .runClient(serverId)
+          .flatMap(_ => clientImpl.makeRequest(request)),
+        Duration.Inf
+      )
+      .get
+    checkResponse(response, request)
   }
 
   val freeResult = checkFree(Request(Some(Event(111, Model(Some(1))))))

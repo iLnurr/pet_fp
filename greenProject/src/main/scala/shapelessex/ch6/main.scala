@@ -11,17 +11,17 @@ object main extends App {
   case class V3(i: Int, s: String, d: Double)
   case class V4(s: String, i: Int)
 
-  V1(1,"1").migrateTo[V2].tapPrintln()
-  V1(1,"1").migrateTo[V3].tapPrintln()
-  V1(1,"1").migrateTo[V4].tapPrintln()
+  V1(1, "1").migrateTo[V2].tapPrintln()
+  V1(1, "1").migrateTo[V3].tapPrintln()
+  V1(1, "1").migrateTo[V4].tapPrintln()
 
   // records
   import shapeless.record._
-  val v1 = LabelledGeneric[V1].to(V1(1,"1"))
+  val v1 = LabelledGeneric[V1].to(V1(1, "1"))
   assert(v1.get('i) == 1)
   assert(v1.get('s) == "1")
 
-  val v12 = v1.updated('i,2)
+  val v12 = v1.updated('i, 2)
   assert(v12.get('i) == 2)
 
   val v13 = v12.updateWith('i)(3 + _)

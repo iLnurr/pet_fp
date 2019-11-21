@@ -4,18 +4,17 @@ import impl._
 import shapelessex._
 
 object main extends App {
-  def check[A](l: List[A])
-              (implicit enc: MyTC[A]): List[A] = {
+  def check[A](l: List[A])(implicit enc: MyTC[A]): List[A] = {
     val res = l
       .map { a =>
         enc.to(a.tapPrintln()).tapPrintln()
-      }.map { b =>
-      enc.from(b).tapPrintln()
-    }
+      }
+      .map { b =>
+        enc.from(b).tapPrintln()
+      }
     assert(l == res, s"$l\n != \n$res")
     res
   }
-
 
   println("start")
 

@@ -20,28 +20,27 @@ object algebra {
   }
   case class Event(ts: Long, model: Model)
 
-  trait Request[F[_],A] {
+  trait Request[F[_], A] {
     def entity: F[A]
   }
-  trait Response[F[_],A] {
+  trait Response[F[_], A] {
     def body: F[A]
   }
 
-  type Req = Request[Option, Event]
+  type Req  = Request[Option, Event]
   type Resp = Response[Option, Event]
   trait Connection {
     def getRequest: Option[Req]
     def addResponse(resp: Resp, req: Req): Resp
-    def makeRequest(r: Req): Resp
-    def close(): Unit = {
+    def makeRequest(r:    Req): Resp
+    def close(): Unit =
       println(s"Close connection")
-    }
   }
 
   trait Server[F[_]] {
     def convert: Req => Resp
-    def run(conn: F[Connection])(implicit F: Monad[F]): StreamProcess[F,Resp] =
-      resource(conn){c =>
+    def run(conn: F[Connection])(implicit F: Monad[F]): StreamProcess[F, Resp] =
+      resource(conn) { c =>
         def step = c.getRequest
         def requests: StreamProcess[F, Resp] = eval(F.unit(step)).flatMap {
           case None =>
@@ -51,27 +50,29 @@ object algebra {
             println(s"Server got request $req")
             val resp = convert(req)
             println(s"Server response $resp")
-            c.addResponse(resp,req)
+            c.addResponse(resp, req)
             Emit(resp, requests)
         }
         requests
-      }{
-        c => eval_(F.unit(c.close()))
+      } { c =>
+        eval_(F.unit(c.close()))
       }
 
   }
 
   trait Client[F[_]] {
-    def call(request: Req, conn: F[Connection])(implicit F: Monad[F]): StreamProcess[F,Resp] =
-      resource(conn){c =>
-        eval(F.unit{
+    def call(request: Req, conn: F[Connection])(
+      implicit F:     Monad[F]
+    ): StreamProcess[F, Resp] =
+      resource(conn) { c =>
+        eval(F.unit {
           println(s"Client send request $request")
           val resp = c.makeRequest(request)
           println(s"Client got response $resp")
           resp
         })
-      }{
-        _ => eval_(F.unit(println(s"Client call ended")))
+      } { _ =>
+        eval_(F.unit(println(s"Client call ended")))
       }
   }
 }
@@ -81,8 +82,8 @@ object Test extends App {
   val server = new Server[IO] {
     override def convert: Req => Resp = TestImpl.convert
   }
-  val client1 = new Client[IO]{}
-  val client2 = new Client[IO]{}
+  val client1 = new Client[IO] {}
+  val client2 = new Client[IO] {}
 
   val serverProgram =
     server
@@ -91,14 +92,10 @@ object Test extends App {
       .runFree
 
   val client1Program =
-    client1.call(testRequest, testConnection)
-      .runStreamProcess
-      .runFree
+    client1.call(testRequest, testConnection).runStreamProcess.runFree
 
   val client2Program =
-    client2.call(testRequest, testConnection)
-      .runStreamProcess
-      .runFree
+    client2.call(testRequest, testConnection).runStreamProcess.runFree
 
   val main = for {
     _ <- serverProgram
@@ -112,19 +109,20 @@ object Test extends App {
 
 object TestImpl {
   case class RequestImpl[A](entity: Option[A]) extends Request[Option, A]
-  case class ResponseImpl[A](body: Option[A]) extends Response[Option, A]
-  case class TestModel(id: Option[Long], info: String) extends Model
+  case class ResponseImpl[A](body:  Option[A]) extends Response[Option, A]
+  case class TestModel(id:          Option[Long], info: String) extends Model
 
-  def ts = System.currentTimeMillis()
+  def ts                    = System.currentTimeMillis()
   private val idAccumulator = new AtomicLong(0L)
-  def testModel(id: Long = idAccumulator.getAndIncrement()): Model = TestModel(Some(id), "")
+  def testModel(id: Long = idAccumulator.getAndIncrement()): Model =
+    TestModel(Some(id), "")
   def eventGen: Event = Event(ts = ts, model = testModel())
   def eventsF = List(eventGen)
   def testRequest: Req = RequestImpl(Some(eventGen))
 
   class TestConnection extends Connection {
-    private var requests = List[Req]()
-    private val responses = mutable.Map[Req,Resp]()
+    private var requests  = List[Req]()
+    private val responses = mutable.Map[Req, Resp]()
 
     def getRequest = {
       Thread.sleep(1000)
@@ -134,25 +132,25 @@ object TestImpl {
       }
     }
     def makeRequest(req: Req): Resp = {
-      def tryToGet(req: Req): Resp = {
+      def tryToGet(req: Req): Resp =
         responses.getOrElse(req, {
           Thread.sleep(1000)
           tryToGet(req)
         })
-      }
       val nl = req :: requests
       requests = nl
       tryToGet(req)
     }
 
     def addResponse(resp: Resp, req: Req): Resp = {
-      responses.update(req,resp)
+      responses.update(req, resp)
       resp
     }
   }
 
-  def convert: Req => Resp = req =>
-    ResponseImpl(req.entity.map{ event =>
-      event.copy(model = TestModel(event.model.id, "updated model"))
-    })
+  def convert: Req => Resp =
+    req =>
+      ResponseImpl(req.entity.map { event =>
+        event.copy(model = TestModel(event.model.id, "updated model"))
+      })
 }
