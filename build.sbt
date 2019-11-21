@@ -37,3 +37,12 @@ lazy val blackProject = project
     name    := "fs2WSserver",
     libraryDependencies ++= blackProjectDeps
   )
+
+lazy val anService = project
+  .in(file("anService"))
+  .settings(commonSettings())
+  .settings(
+    version := "0.1",
+    name    := "an",
+    libraryDependencies ++= anServiceDeps
+  )
