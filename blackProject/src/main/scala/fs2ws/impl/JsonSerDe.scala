@@ -16,14 +16,14 @@ object JsonSerDe {
       case Right(value) =>
         IO.pure(value)
     }
-  implicit val incomingMessageDecoder: JsonDecoder[IO, Message] =
+  implicit val decoder: JsonDecoder[IO, Message] =
     new JsonDecoder[IO, Message] {
       override def fromJson(json: String): IO[Message] =
         handleError(decode[Message](json))
     }
   implicit val genDevConfig: Configuration =
     Configuration.default.withDiscriminator("$type")
-  implicit def encoder: JsonEncoder[IO, Message] =
+  implicit val encoder: JsonEncoder[IO, Message] =
     new JsonEncoder[IO, Message] {
       override def toJson(value: Message): IO[String] =
         IO.pure(value.asJson.noSpaces)

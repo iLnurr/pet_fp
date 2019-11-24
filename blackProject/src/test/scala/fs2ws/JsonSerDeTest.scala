@@ -8,7 +8,7 @@ object JsonSerDeTest extends App {
   val json    = encoder.toJson(authReq).unsafeRunSync()
   println(s"encoded $json ")
 
-  println(incomingMessageDecoder.fromJson(json).unsafeRunSync())
+  println(decoder.fromJson(json).unsafeRunSync())
   println(encoder.toJson(login_successful("admin")).unsafeRunSync())
 
 }

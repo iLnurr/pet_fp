@@ -7,16 +7,17 @@ import fs2ws._
 import fs2ws.impl.State._
 
 class ServerImpl(
-  val clients: Clients[IO],
-  val core:    MsgStreamPipe[IO] => Stream[IO, Unit]
-)(implicit ce: ConcurrentEffect[IO], timer: Timer[IO])
+  val clients:  Clients[IO],
+  val core:     MsgStreamPipe[IO] => Stream[IO, Unit],
+  val services: Services[IO]
+)(implicit ce:  ConcurrentEffect[IO], timer: Timer[IO])
     extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
   override def handler: (Message, Client[IO]) => IO[Message] =
     (req, clientState) =>
       if (req.isInstanceOf[PrivilegedCommands] && !clientState.privileged) {
         IO.pure(not_authorized())
       } else {
-        Services.handleReq(req)
+        services.handleReq(req)
       }
 
   override def start(): IO[Unit] =
@@ -61,7 +62,7 @@ class ServerImpl(
   ): IO[Unit] =
     response match {
       case _: table_added | _: table_updated | _: table_removed =>
-        Services.tableList
+        services.tableList
           .flatMap { tableList =>
             clients.broadcast(tableList, _.subscribed)
           }

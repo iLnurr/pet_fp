@@ -1,9 +1,10 @@
 package fs2ws
 
 import fs2ws.Domain.User
+import fs2ws.impl.InMemoryDB
 
 object DBTest extends App {
-  val users = Users
+  val users = InMemoryDB.Users
 
   (for {
     _ <- users.list.map(l => assert(l.size == 2, "2"))
