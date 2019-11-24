@@ -30,6 +30,24 @@ class DbSpec extends FlatSpec with Matchers {
       kvLess = Seq(),
       kvMore = Seq()
     )
+    val p7 = db.getRecords(
+      fields = Seq("id", "id2", "name", "next"),
+      kvEq   = Seq("id" -> "1"),
+      kvLess = Seq(),
+      kvMore = Seq()
+    )
+    val p8 = db.getRecords(
+      fields = Seq("id", "id2", "name", "next"),
+      kvEq   = Seq("id" -> "1"),
+      kvLess = Seq("id2" -> "5"),
+      kvMore = Seq()
+    )
+    val p9 = db.getRecords(
+      fields = Seq("id", "id2", "name", "next"),
+      kvEq   = Seq("id" -> "1"),
+      kvLess = Seq("id2" -> "5"),
+      kvMore = Seq("id2" -> "-1")
+    )
     for {
       p11 <- p1
       p21 <- p2
@@ -42,6 +60,9 @@ class DbSpec extends FlatSpec with Matchers {
       p41 <- p4
       p51 <- p5
       p61 <- p6
+      p71 <- p7
+      p81 <- p8
+      p91 <- p9
     } yield {
       dbLogger.debug(s"p11 $p11")
       dbLogger.debug(s"p21 $p21")
@@ -49,6 +70,9 @@ class DbSpec extends FlatSpec with Matchers {
       dbLogger.debug(s"p41 ${p41.size}")
       dbLogger.debug(s"p51 $p51")
       dbLogger.debug(s"p61 $p61")
+      dbLogger.debug(s"p71 $p71")
+      dbLogger.debug(s"p81 $p81")
+      dbLogger.debug(s"p91 $p91")
       p11
     }
   }

@@ -36,13 +36,20 @@ object db {
 
     val whereFragment =
       if (kvEq.nonEmpty || kvLess.nonEmpty || kvMore.nonEmpty)
-        s"where \n$kvEqQ \n AND $kvMoreQ \n AND $kvLessQ"
+        s"where \n$kvEqQ \n ${if (kvMoreQ.nonEmpty) s"AND $kvMoreQ" else ""} \n ${if (kvLessQ.nonEmpty)
+          s"AND $kvLessQ"
+        else ""}"
       else ""
 
+    val raw = s"select ${fields.mkString(",")} from $tableName $whereFragment"
     Fragment
-      .const(s"select ${fields.mkString(",")} from $tableName $whereFragment")
+      .const(raw)
       .execWith(exec)
       .transact(xa)
+      .handleErrorWith { ex =>
+        dbLogger.error(s"Can't process query $raw", ex)
+        IO.raiseError(ex)
+      }
   }
 
   // Exec our PreparedStatement, examining metadata to figure out column count.
