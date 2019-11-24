@@ -11,18 +11,17 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
 object InMemoryDB {
-  abstract class DbInMemory[F[_], T <: DBEntity](buffer: ArrayBuffer[T])(
-    implicit F:                                          Sync[F]
-  ) extends DbReaderAlgebra[F, T]
+  abstract class DbInMemory[F[_]: Sync, T <: DBEntity](buffer: ArrayBuffer[T])
+      extends DbReaderAlgebra[F, T]
       with DbWriterAlgebra[F, T] {
     private val counter = new AtomicLong(0L)
     def setIdIfEmpty: Long => T => T
     def getById(id: Long): F[Option[T]] =
-      F.delay(buffer.find(_.id == Option(id)))
+      Sync[F].delay(buffer.find(_.id == Option(id)))
     def getByName(n: String): F[Option[T]] =
-      F.delay(buffer.find(_.name == n))
+      Sync[F].delay(buffer.find(_.name == n))
     def add(after_id: Long, ent: T): F[Either[Throwable, T]] =
-      F.delay(
+      Sync[F].delay(
         Try {
           val checked = setIdIfEmpty(counter.incrementAndGet())(ent)
           if (after_id < 0) {
@@ -37,9 +36,9 @@ object InMemoryDB {
         }.toEither
       )
     def list: F[Seq[T]] =
-      F.delay(buffer.toSeq)
+      Sync[F].delay(buffer.toSeq)
     def update(ent: T): F[Either[Throwable, Unit]] =
-      F.delay {
+      Sync[F].delay {
         Try {
           buffer
             .find(_.id == ent.id)
@@ -49,7 +48,7 @@ object InMemoryDB {
       }
 
     def remove(id: Long): F[Either[Throwable, Unit]] =
-      F.delay {
+      Sync[F].delay {
         Try(
           buffer
             .find(_.id == Option(id))

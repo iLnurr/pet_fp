@@ -14,7 +14,7 @@ class ServerImpl(
     extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
   override def handler: (Message, Client[IO]) => IO[Message] =
     (req, clientState) =>
-      if (req.isInstanceOf[PrivilegedCommands] && !clientState.privileged) {
+      if (req.isInstanceOf[Command] && !clientState.privileged) {
         IO.pure(not_authorized())
       } else {
         services.handleReq(req)
