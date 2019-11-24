@@ -6,7 +6,7 @@ import fs2ws.impl.InMemoryDB
 import org.scalatest.{FlatSpec, Matchers}
 
 class DBSpec extends FlatSpec with Matchers {
-  behavior.of("UserReader/UserWriter")
+  behavior.of("StorageReader/StorageWriter")
 
   private val userReader: UserReader[IO] = InMemoryDB.Users
   private val userWriter: UserWriter[IO] = InMemoryDB.Users
