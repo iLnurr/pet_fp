@@ -9,6 +9,7 @@ package object fs2ws {
   type CorePipe[F[_]]      = Pipe[F, Frame[String], Frame[String]]
 
   type UserReader[F[_]]  = DbReaderAlgebra[F, User]
+  type UserWriter[F[_]]  = DbWriterAlgebra[F, User]
   type TableReader[F[_]] = DbReaderAlgebra[F, Table]
   type TableWriter[F[_]] = DbWriterAlgebra[F, Table]
 
