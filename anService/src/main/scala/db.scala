@@ -4,29 +4,39 @@ import doobie.implicits._
 import conf._
 import com.typesafe.scalalogging.Logger
 import cats.implicits._
+import doobie.util.transactor.Transactor.Aux
 
 object db {
   // https://github.com/tpolecat/doobie/blob/master/modules/example/src/main/scala/example/Dynamic.scala
   type Headers = List[String]
   type Data    = List[List[Object]]
 
-  val dbLogger    = Logger("db")
-  implicit val cs = IO.contextShift(ExecutionContexts.synchronous)
+  val dbLogger         = Logger("db")
+  implicit lazy val cs = IO.contextShift(ExecutionContexts.synchronous)
 
-  val xa = Transactor.fromDriverManager[IO](
-    driver = dbDriver,
-    url    = dbUrl,
-    user   = dbUser,
-    pass   = dbPass
-  )
+  def startTransactor(): Aux[IO, Unit] =
+    Transactor.fromDriverManager[IO](
+      driver = dbDriver,
+      url    = dbUrl,
+      user   = dbUser,
+      pass   = dbPass
+    )
 
   def getRecords(
-    fields: Seq[String],
-    kvEq:   Seq[(String, String)],
-    kvMore: Seq[(String, String)],
-    kvLess: Seq[(String, String)]
-  ): IO[(Headers, Data)] = {
-    val tableName = "test"
+    tableName:   String,
+    fields:      Seq[String],
+    kvEq:        Seq[(String, String)],
+    kvMore:      Seq[(String, String)],
+    kvLess:      Seq[(String, String)]
+  )(implicit xa: Transactor[IO]): IO[(Headers, Data)] =
+    getRecords(
+      GetInfo(tableName, fields, kvEq.toMap, kvMore.toMap, kvLess.toMap)
+    )
+
+  def getRecords(
+    getInfo:     GetInfo
+  )(implicit xa: Transactor[IO]): IO[(Headers, Data)] = {
+    import getInfo._
     val kvEqQ: String =
       kvEq.map { case (k, v) => k + "=" + v }.mkString("\n AND ")
     val kvMoreQ: String =

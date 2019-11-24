@@ -1,9 +1,10 @@
 import com.typesafe.config.ConfigFactory
 
 object conf {
-  val config   = ConfigFactory.load()
-  val dbDriver = config.getString("db.driver")
-  val dbUrl    = config.getString("db.url")
-  val dbUser   = config.getString("db.user")
-  val dbPass   = config.getString("db.password")
+  lazy val config   = ConfigFactory.load()
+  lazy val dbDriver = config.getString("db.driver")
+  lazy val dbUrl    = config.getString("db.url")
+  lazy val dbUser   = config.getString("db.user")
+  lazy val dbPass   = config.getString("db.password")
+  lazy val httpPort = config.getInt("http.port")
 }

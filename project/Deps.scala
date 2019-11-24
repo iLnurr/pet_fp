@@ -73,6 +73,14 @@ object Deps {
     "org.http4s" %% "http4s-blaze-client" % Versions.http4sVersion
   )
 
+  private lazy val http4s_circe = Seq(
+    "org.http4s" %% "http4s-circe" % Versions.http4sVersion,
+    // Optional for auto-derivation of JSON codecs
+    "io.circe" %% "circe-generic" % Versions.circe,
+    // Optional for string interpolation to JSON model
+    "io.circe" %% "circe-literal" % Versions.circe
+  )
+
   private lazy val doobie = Seq(
     "org.tpolecat" %% "doobie-core"      % Versions.doobieVersion,
     "org.tpolecat" %% "doobie-h2"        % Versions.doobieVersion,
@@ -96,7 +104,7 @@ object Deps {
   lazy val anServiceDeps: Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++
     conf ++
     shapeless ++
-    http4s ++ circe ++
+    http4s ++ http4s_circe ++
     doobie ++ mysql ++
     logging ++
     testDeps

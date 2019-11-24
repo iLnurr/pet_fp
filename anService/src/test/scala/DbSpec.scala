@@ -1,4 +1,3 @@
-import db.xa
 import doobie.implicits._
 import org.scalatest.{Assertion, FlatSpec, Matchers}
 
@@ -10,33 +9,38 @@ class DbSpec extends FlatSpec with Matchers {
   }
 
   def check(): Assertion = {
+    implicit val xa = db.startTransactor()
     def populate(id2: Long, name: String, next: String) =
       sql"insert into db.test(id2,name,next) values ($id2,$name,$next)".update.run
         .transact(xa)
 
     val p6 = db.getRecords(
-      fields = Seq("id", "id2", "name", "next"),
-      kvEq   = Seq(),
-      kvLess = Seq(),
-      kvMore = Seq()
+      tableName = "test",
+      fields    = Seq("id", "id2", "name", "next"),
+      kvEq      = Seq(),
+      kvLess    = Seq(),
+      kvMore    = Seq()
     )
     val p7 = db.getRecords(
-      fields = Seq("id", "id2", "name", "next"),
-      kvEq   = Seq("id" -> "1"),
-      kvLess = Seq(),
-      kvMore = Seq()
+      tableName = "test",
+      fields    = Seq("id", "id2", "name", "next"),
+      kvEq      = Seq("id" -> "1"),
+      kvLess    = Seq(),
+      kvMore    = Seq()
     )
     val p8 = db.getRecords(
-      fields = Seq("id", "id2", "name", "next"),
-      kvEq   = Seq("id" -> "1"),
-      kvLess = Seq("id2" -> "5"),
-      kvMore = Seq()
+      tableName = "test",
+      fields    = Seq("id", "id2", "name", "next"),
+      kvEq      = Seq("id" -> "1"),
+      kvLess    = Seq("id2" -> "5"),
+      kvMore    = Seq()
     )
     val p9 = db.getRecords(
-      fields = Seq("id", "id2", "name", "next"),
-      kvEq   = Seq("id" -> "1"),
-      kvLess = Seq("id2" -> "5"),
-      kvMore = Seq("id2" -> "-1")
+      tableName = "test",
+      fields    = Seq("id", "id2", "name", "next"),
+      kvEq      = Seq("id" -> "1"),
+      kvLess    = Seq("id2" -> "5"),
+      kvMore    = Seq("id2" -> "-1")
     )
     val program = for {
       _ <- sql"create database if not exists db".update.run
