@@ -84,7 +84,9 @@ object Services {
       IO.raiseError(new RuntimeException(s"Bad request: $other"))
   }
 }
-abstract class DB[F[_], T <: DBEntity](implicit F: Sync[F]) {
+abstract class DbInMemory[F[_], T <: DBEntity](implicit F: Sync[F])
+    extends DbReaderAlgebra[F, T]
+    with DbWriterAlgebra[F, T] {
   private val repo    = ArrayBuffer[T]()
   private val counter = new AtomicLong(0L)
   def setIdIfEmpty: Long => T => T
@@ -129,7 +131,7 @@ abstract class DB[F[_], T <: DBEntity](implicit F: Sync[F]) {
     }
 }
 
-object Users extends DB[IO, User] {
+object Users extends DbInMemory[IO, User] {
   val admin = User(Option(0L), "admin", "admin", UserType.ADMIN)
   val user  = User(Option(1L), "un", "upwd", UserType.USER)
 
@@ -138,7 +140,7 @@ object Users extends DB[IO, User] {
   override def setIdIfEmpty: Long => User => User =
     newId => input => input.copy(id = Some(input.id.getOrElse(newId)))
 }
-object Tables extends DB[IO, Table] {
+object Tables extends DbInMemory[IO, Table] {
   override def setIdIfEmpty: Long => Table => Table =
     newId => input => input.copy(id = Some(input.id.getOrElse(newId)))
 }

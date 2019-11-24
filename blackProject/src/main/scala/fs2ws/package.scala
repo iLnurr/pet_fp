@@ -1,12 +1,16 @@
 import cats.effect.{ConcurrentEffect, Timer}
 import fs2.{Pipe, Stream}
-import fs2ws.Domain.Message
+import fs2ws.Domain.{Message, Table, User}
 import spinoco.fs2.http.websocket.Frame
 import spinoco.fs2.http.websocket.Frame.Text
 
 package object fs2ws {
   type MsgStreamPipe[F[_]] = Pipe[F, Message, Message]
   type CorePipe[F[_]]      = Pipe[F, Frame[String], Frame[String]]
+
+  type UserReader[F[_]]  = DbReaderAlgebra[F, User]
+  type TableReader[F[_]] = DbReaderAlgebra[F, Table]
+  type TableWriter[F[_]] = DbWriterAlgebra[F, Table]
 
   import cats.syntax.functor._
   import cats.instances.function._

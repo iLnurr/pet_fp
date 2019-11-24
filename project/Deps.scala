@@ -91,7 +91,7 @@ object Deps {
     : Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++ conf ++ shapeless
 
   lazy val blackProjectDeps
-    : Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ enumeratum ++ conf
+    : Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ conf ++ testDeps
 
   lazy val anServiceDeps: Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++
     conf ++

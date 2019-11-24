@@ -3,7 +3,7 @@ package fs2ws
 import java.util.UUID
 
 import cats.tagless.finalAlg
-import fs2ws.Domain.Message
+import fs2ws.Domain.{DBEntity, Message}
 import fs2ws.impl.State._
 
 @finalAlg
@@ -31,4 +31,18 @@ trait ServerAlgebra[F[_], I, O, StreamPipe[_[_]]] {
   def clients: Clients[F]
   def start(): F[Unit]
   def pipe:    StreamPipe[F]
+}
+
+@finalAlg
+trait DbReaderAlgebra[F[_], T <: DBEntity] {
+  def getById(id:  Long):   F[Option[T]]
+  def getByName(n: String): F[Option[T]]
+  def list: F[Seq[T]]
+}
+
+@finalAlg
+trait DbWriterAlgebra[F[_], T <: DBEntity] {
+  def add(after_id: Long, ent: T): F[Either[Throwable, T]]
+  def update(ent:   T): F[Either[Throwable, Unit]]
+  def remove(id:    Long): F[Either[Throwable, Unit]]
 }
