@@ -26,9 +26,9 @@ class DbSpec extends FlatSpec with Matchers {
     val p5 = q.transact(xa)
     val p6 = db.getRecords(
       fields = Seq("id", "id2", "name", "next"),
-      kvEq   = Seq("id" -> "0"),
-      kvLess = Seq("id2" -> "5"),
-      kvMore = Seq("id2" -> "0")
+      kvEq   = Seq(),
+      kvLess = Seq(),
+      kvMore = Seq()
     )
     for {
       p11 <- p1

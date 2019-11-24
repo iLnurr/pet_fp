@@ -25,7 +25,7 @@ object db {
     kvEq:   Seq[(String, String)],
     kvMore: Seq[(String, String)],
     kvLess: Seq[(String, String)]
-  ) = {
+  ): IO[(Headers, Data)] = {
     val tableName = "test"
     val kvEqQ =
       s"${kvEq.map { case (k, v) => k + "=" + v }.mkString("\n AND ")}"
@@ -34,19 +34,15 @@ object db {
     val kvLessQ =
       s"${kvLess.map { case (k, v) => k + "<" + v }.mkString("\n AND ")}"
 
-    val whereFragment = s"where \n$kvEqQ \n AND $kvMoreQ \n AND $kvLessQ"
+    val whereFragment =
+      if (kvEq.nonEmpty || kvLess.nonEmpty || kvMore.nonEmpty)
+        s"where \n$kvEqQ \n AND $kvMoreQ \n AND $kvLessQ"
+      else ""
 
-    val rr = s"select ${fields.mkString(",")} from $tableName $whereFragment"
-
-    println(rr)
-
-    Fragment.const(rr).execWith(exec).transact(xa).flatMap {
-      case (headers, data) =>
-        for {
-          _ <- IO(println(headers))
-          _ <- data.traverse(d => IO(println(d)))
-        } yield data
-    }
+    Fragment
+      .const(s"select ${fields.mkString(",")} from $tableName $whereFragment")
+      .execWith(exec)
+      .transact(xa)
   }
 
   // Exec our PreparedStatement, examining metadata to figure out column count.
