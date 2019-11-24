@@ -1,29 +1,19 @@
-import cats.effect.IO
-import db.{dbLogger, xa}
-import org.scalatest.{FlatSpec, Matchers}
+import db.xa
 import doobie.implicits._
+import org.scalatest.{Assertion, FlatSpec, Matchers}
 
 class DbSpec extends FlatSpec with Matchers {
   behavior.of("DOOBIE")
 
   it should "properly work script" in {
-    check.unsafeRunSync()
+    check()
   }
 
-  def check: IO[Int] = {
-    val database = sql"create database if not exists db".update
-    val table =
-      sql"create table if not exists db.test (id bigint primary key auto_increment, id2 bigint, name text, next text)".update
+  def check(): Assertion = {
     def populate(id2: Long, name: String, next: String) =
-      sql"insert into db.test(id2,name,next) values ($id2,$name,$next)".update
-    val all = sql"select * from test".query[(String, String)]
-    val q   = sql"select 42".query[Int].unique
+      sql"insert into db.test(id2,name,next) values ($id2,$name,$next)".update.run
+        .transact(xa)
 
-    val p1 = database.run.transact(xa)
-    val p2 = table.run.transact(xa)
-    val p3 = populate(0, "n", "n").run.transact(xa)
-    val p4 = all.to[List].transact(xa)
-    val p5 = q.transact(xa)
     val p6 = db.getRecords(
       fields = Seq("id", "id2", "name", "next"),
       kvEq   = Seq(),
@@ -48,32 +38,33 @@ class DbSpec extends FlatSpec with Matchers {
       kvLess = Seq("id2" -> "5"),
       kvMore = Seq("id2" -> "-1")
     )
-    for {
-      p11 <- p1
-      p21 <- p2
-      p31 <- p3
-      _   <- populate(1, "n1", "n1").run.transact(xa)
-      _   <- populate(2, "n2", "n2").run.transact(xa)
-      _   <- populate(3, "n3", "n3").run.transact(xa)
-      _   <- populate(4, "n4", "n4").run.transact(xa)
-      _   <- populate(5, "n5", "n5").run.transact(xa)
-      p41 <- p4
-      p51 <- p5
+    val program = for {
+      _ <- sql"create database if not exists db".update.run
+        .transact(xa)
+      _ <- sql"create table if not exists db.test (id bigint primary key auto_increment, id2 bigint, name text, next text)".update.run
+        .transact(xa)
+      _ <- populate(0, "n", "n")
+      _ <- populate(1, "n1", "n1")
+      _ <- populate(2, "n2", "n2")
+      _ <- populate(3, "n3", "n3")
+      _ <- populate(4, "n4", "n4")
+      _ <- populate(5, "n5", "n5")
+      p41 <- sql"select * from test"
+        .query[(String, String)]
+        .to[List]
+        .transact(xa)
       p61 <- p6
       p71 <- p7
       p81 <- p8
       p91 <- p9
     } yield {
-      dbLogger.debug(s"p11 $p11")
-      dbLogger.debug(s"p21 $p21")
-      dbLogger.debug(s"p31 $p31")
-      dbLogger.debug(s"p41 ${p41.size}")
-      dbLogger.debug(s"p51 $p51")
-      dbLogger.debug(s"p61 $p61")
-      dbLogger.debug(s"p71 $p71")
-      dbLogger.debug(s"p81 $p81")
-      dbLogger.debug(s"p91 $p91")
-      p11
+      val allSize = p41.size
+      p61._2.size shouldBe allSize
+      p71._2.size shouldBe 1
+      p81._2.size shouldBe 1
+      p91._2.size shouldBe 1
     }
+
+    program.unsafeRunSync()
   }
 }
