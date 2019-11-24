@@ -27,12 +27,12 @@ object db {
     kvLess: Seq[(String, String)]
   ): IO[(Headers, Data)] = {
     val tableName = "test"
-    val kvEqQ =
-      s"${kvEq.map { case (k, v) => k + "=" + v }.mkString("\n AND ")}"
-    val kvMoreQ =
-      s"${kvMore.map { case (k, v) => k + ">" + v }.mkString("\n AND ")}"
-    val kvLessQ =
-      s"${kvLess.map { case (k, v) => k + "<" + v }.mkString("\n AND ")}"
+    val kvEqQ: String =
+      kvEq.map { case (k, v) => k + "=" + v }.mkString("\n AND ")
+    val kvMoreQ: String =
+      kvMore.map { case (k, v) => k + ">" + v }.mkString("\n AND ")
+    val kvLessQ: String =
+      kvLess.map { case (k, v) => k + "<" + v }.mkString("\n AND ")
 
     val whereFragment =
       if (kvEq.nonEmpty || kvLess.nonEmpty || kvMore.nonEmpty)

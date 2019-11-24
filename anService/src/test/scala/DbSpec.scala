@@ -46,7 +46,7 @@ class DbSpec extends FlatSpec with Matchers {
       dbLogger.debug(s"p11 $p11")
       dbLogger.debug(s"p21 $p21")
       dbLogger.debug(s"p31 $p31")
-      dbLogger.debug(s"p41 \n${p41.mkString("\n")}")
+      dbLogger.debug(s"p41 ${p41.size}")
       dbLogger.debug(s"p51 $p51")
       dbLogger.debug(s"p61 $p61")
       p11
