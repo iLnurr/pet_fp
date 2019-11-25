@@ -16,7 +16,10 @@ object Deps {
     val doobieVersion  = "0.8.6"
     val mysqlConnector = "8.0.18"
 
-    val scalaTest = "3.0.8"
+    val scalaTest             = "3.0.8"
+    val testcontainers        = "0.33.0"
+    val kafkaTestContainer    = "1.12.3"
+    val postgresTestcontainer = "1.12.3"
   }
 
   private lazy val logging = Seq(
@@ -26,7 +29,10 @@ object Deps {
   )
 
   private lazy val testDeps = Seq(
-    "org.scalatest" %% "scalatest" % Versions.scalaTest
+    "org.scalatest"      %% "scalatest"            % Versions.scalaTest,
+    "com.dimafeng"       %% "testcontainers-scala" % Versions.testcontainers,
+    "org.testcontainers" % "postgresql"            % Versions.postgresTestcontainer,
+    "org.testcontainers" % "kafka"                 % Versions.kafkaTestContainer
   ).map(_ % Test)
 
   private lazy val cats = Seq(

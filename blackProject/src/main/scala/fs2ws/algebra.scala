@@ -46,3 +46,14 @@ trait DbWriterAlgebra[F[_], T <: DBEntity] {
   def update(ent:   T): F[Either[Throwable, Unit]]
   def remove(id:    Long): F[Either[Throwable, Unit]]
 }
+
+@finalAlg
+trait MessageReader[F[_]] {
+  def consume[A](msgHandler: Message => F[A]): F[List[A]]
+}
+
+@finalAlg
+trait MessageWriter[F[_]] {
+  def send(msg:      Message):      F[Unit]
+  def sendMany(msgs: Seq[Message]): F[Unit]
+}
