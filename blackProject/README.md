@@ -1,4 +1,4 @@
-### WebSocket server for a lobby and that implements the protocol and functionality described under WebsocketsAPI.
+### WebSocket server.
 
 ### Websockets API
 #### Authentication 
