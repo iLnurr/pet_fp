@@ -91,7 +91,7 @@ object Deps {
     "org.tpolecat" %% "doobie-core"      % Versions.doobieVersion,
     "org.tpolecat" %% "doobie-h2"        % Versions.doobieVersion,
     "org.tpolecat" %% "doobie-hikari"    % Versions.doobieVersion, // HikariCP transactor.
-    "org.tpolecat" %% "doobie-specs2"    % Versions.doobieVersion % "test", // Specs2 support for typechecking statements.
+    "org.tpolecat" %% "doobie-postgres"  % Versions.doobieVersion, // Postgres driver 42.2.8 + type mappings
     "org.tpolecat" %% "doobie-scalatest" % Versions.doobieVersion % "test" // ScalaTest support for typechecking statements.
   )
 
@@ -105,7 +105,7 @@ object Deps {
     : Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++ conf ++ shapeless
 
   lazy val blackProjectDeps
-    : Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ conf ++ testDeps
+    : Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ conf ++ doobie ++ logging ++ testDeps
 
   lazy val anServiceDeps: Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++
     conf ++

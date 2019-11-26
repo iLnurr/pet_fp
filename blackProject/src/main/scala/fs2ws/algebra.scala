@@ -48,12 +48,12 @@ trait DbWriterAlgebra[F[_], T <: DBEntity] {
 }
 
 @finalAlg
-trait MessageReader[F[_]] {
+trait MessageReaderAlgebra[F[_]] {
   def consume[A](msgHandler: Message => F[A]): F[List[A]]
 }
 
 @finalAlg
-trait MessageWriter[F[_]] {
+trait MessageWriterAlgebra[F[_]] {
   def send(msg:      Message):      F[Unit]
   def sendMany(msgs: Seq[Message]): F[Unit]
 }
