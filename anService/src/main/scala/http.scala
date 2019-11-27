@@ -15,16 +15,21 @@ import doobie.util.transactor.Transactor
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.syntax._
+import model.{Client, GetInfo, HouseInfo, QueryInfo}
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.implicits._
+import db._
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 object http {
   private val logger = Logger("http")
-  implicit private val decoder: EntityDecoder[IO, GetInfo] = jsonOf[IO, GetInfo]
+  implicit private val decoderGI: EntityDecoder[IO, GetInfo] =
+    jsonOf[IO, GetInfo]
+  implicit private val decoderQI: EntityDecoder[IO, QueryInfo] =
+    jsonOf[IO, QueryInfo]
   private val blockingEC =
     ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
   private val blockingCS: ContextShift[IO] =
@@ -51,9 +56,21 @@ object http {
             Root / "records" / "body" / "mail" / mail =>
           for {
             info    <- req.as[GetInfo]
-            records <- processGetRequest(info)
+            records <- db.getRecords(db.constructQuery(info)).map(_._2)
             _ <- sendToMail(
               mail,
+              "search result by quiz from tradegoria",
+              records
+            )
+            resp <- Ok(records.mkString(",").asJson)
+          } yield (resp)
+        case req @ POST ->
+            Root / "records" / "body" / "query" =>
+          for {
+            info    <- req.as[QueryInfo]
+            records <- db.getRecords(db.constructQuery(info)).map(_._2)
+            _ <- sendToMail(
+              info.client.mail,
               "search result by quiz from tradegoria",
               records
             )
@@ -76,15 +93,16 @@ object http {
       .drain
       .map(_ => ExitCode.Success)
 
-  private def processGetRequest(getInfo: GetInfo)(implicit xa: Transactor[IO]) =
-    db.getRecords(getInfo).map(_._2)
-
   private def sendToMail(mail: String, subject: String, records: Data)(
     implicit cs:               ContextShift[IO]
   ) = IO.fromFuture(
     IO {
-      logger.debug(s"Send records to mail: $mail. \n Records: $records")
-      mailer.send(subject, records.mkString(","), mail)
+      if (records.nonEmpty) {
+        logger.debug(s"Send records to mail: $mail. \n Records: $records")
+        mailer.send(subject, records.mkString(","), mail)
+      } else {
+        Future.unit
+      }
     }
   )
 }

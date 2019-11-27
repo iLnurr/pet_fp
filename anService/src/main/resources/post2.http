@@ -1,0 +1,19 @@
+POST http://localhost:9000/records/body/query
+Accept: application/json
+Cache-Control: no-cache
+Content-Type: application/json
+
+{
+  "client": {
+    "name": "Ilnur",
+    "mail": "serbaevilnur@mail.ru"
+  },
+  "houseInfo": {
+    "price": 100000,
+    "region": "BAR",
+    "rooms": 4,
+    "houseType": "flats"
+  }
+}
+
+###

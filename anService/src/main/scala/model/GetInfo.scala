@@ -1,3 +1,5 @@
+package model
+
 case class GetInfo(
   tableName: String,
   fields:    Seq[String],
