@@ -16,6 +16,8 @@ object Deps {
     val doobieVersion  = "0.8.6"
     val mysqlConnector = "8.0.18"
 
+    val mailer = "2.0.0"
+
     val scalaTest             = "3.0.8"
     val testcontainers        = "0.33.0"
     val kafkaTestContainer    = "1.12.3"
@@ -99,6 +101,10 @@ object Deps {
     "mysql" % "mysql-connector-java" % Versions.mysqlConnector
   )
 
+  private lazy val mailer = Seq(
+    "com.github.daddykotex" %% "courier" % Versions.mailer
+  )
+
   lazy val redProjectDeps: Seq[ModuleID] = Seq()
 
   lazy val greenProjectDeps
@@ -113,5 +119,6 @@ object Deps {
     http4s ++ http4s_circe ++
     doobie ++ mysql ++
     logging ++
+    mailer ++
     testDeps
 }

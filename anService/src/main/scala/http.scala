@@ -35,11 +35,11 @@ object http {
       quiz.html.getBytes(java.nio.charset.Charset.forName("CP1251"))
     )
     .toFile
-  private def route(implicit xa: Transactor[IO]) =
+  private def route(implicit xa: Transactor[IO]) = {
+    implicit val cs: ContextShift[IO] = blockingCS
     HttpRoutes
       .of[IO] {
         case request @ GET -> Root / "quiz.html" =>
-          implicit val cs = blockingCS
           StaticFile
             .fromFile(
               file,
@@ -52,11 +52,16 @@ object http {
           for {
             info    <- req.as[GetInfo]
             records <- processGetRequest(info)
-            _       <- sendToMail(mail, records)
-            resp    <- Ok(records.mkString(",").asJson)
+            _ <- sendToMail(
+              mail,
+              "search result by quiz from tradegoria",
+              records
+            )
+            resp <- Ok(records.mkString(",").asJson)
           } yield (resp)
       }
       .orNotFound
+  }
 
   def startHttpServer()(
     implicit cs: ContextShift[IO],
@@ -74,7 +79,12 @@ object http {
   private def processGetRequest(getInfo: GetInfo)(implicit xa: Transactor[IO]) =
     db.getRecords(getInfo).map(_._2)
 
-  private def sendToMail(mail: String, records: Data) = IO.pure {
-    logger.debug(s"Send records to mail: $mail. \n Records: $records")
-  }
+  private def sendToMail(mail: String, subject: String, records: Data)(
+    implicit cs:               ContextShift[IO]
+  ) = IO.fromFuture(
+    IO {
+      logger.debug(s"Send records to mail: $mail. \n Records: $records")
+      mailer.send(subject, records.mkString(","), mail)
+    }
+  )
 }

@@ -1,4 +1,4 @@
-POST http://localhost:9000/records/body/mail/serb@mail.ru
+POST http://localhost:9000/records/body/mail/serbaevilnur@mail.ru
 Accept: application/json
 Cache-Control: no-cache
 Content-Type: application/json
