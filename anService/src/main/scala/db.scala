@@ -23,6 +23,18 @@ object db {
     )
 
   def getRecords(
+    query:       String
+  )(implicit xa: Transactor[IO]): IO[(Headers, Data)] =
+    Fragment
+      .const(query)
+      .execWith(exec)
+      .transact(xa)
+      .handleErrorWith { ex =>
+        dbLogger.error(s"Can't process query $query", ex)
+        IO.raiseError(ex)
+      }
+
+  def getRecords(
     tableName:   String,
     fields:      Seq[String],
     kvEq:        Seq[(String, String)],
@@ -52,14 +64,8 @@ object db {
       else ""
 
     val raw = s"select ${fields.mkString(",")} from $tableName $whereFragment"
-    Fragment
-      .const(raw)
-      .execWith(exec)
-      .transact(xa)
-      .handleErrorWith { ex =>
-        dbLogger.error(s"Can't process query $raw", ex)
-        IO.raiseError(ex)
-      }
+
+    getRecords(raw)
   }
 
   // Exec our PreparedStatement, examining metadata to figure out column count.
