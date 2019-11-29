@@ -1,11 +1,15 @@
 ### WebSocket server.
 
-### Websockets API
-#### Authentication 
+### Architecture
+
+
 
 ### TODO
 DbReaderImpl, DbWriterImpl = Doobie + Postgres
 MessageReaderImpl, MessageWriterImpl = KafkaStreams
+
+### Websockets API
+#### Authentication 
 
 ### Start
 choose available port: for example: 9003
