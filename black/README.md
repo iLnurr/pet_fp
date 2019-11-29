@@ -1,11 +1,8 @@
 ### WebSocket server.
 
-### Architecture
-
-
-
 ### TODO
 DbReaderImpl, DbWriterImpl = Doobie + Postgres
+
 MessageReaderImpl, MessageWriterImpl = KafkaStreams
 
 ### Websockets API

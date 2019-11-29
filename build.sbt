@@ -5,14 +5,16 @@ name := "pet_fp"
 
 version := "0.1"
 
-resolvers += "Sonatype Public" at "https://oss.sonatype.org/content/groups/public/"
+resolvers += "Sonatype Public".at(
+  "https://oss.sonatype.org/content/groups/public/"
+)
 
 lazy val root = project
   .in(file("."))
-  .aggregate(redProject, greenProject, blackProject)
+  .aggregate(red, green, black, an)
 
-lazy val redProject = project
-  .in(file("redProject"))
+lazy val red = project
+  .in(file("red"))
   .settings(commonSettings())
   .settings(
     version := "0.1",
@@ -20,8 +22,8 @@ lazy val redProject = project
     libraryDependencies ++= redProjectDeps
   )
 
-lazy val greenProject = project
-  .in(file("greenProject"))
+lazy val green = project
+  .in(file("green"))
   .settings(commonSettings())
   .settings(
     version := "0.1",
@@ -29,8 +31,8 @@ lazy val greenProject = project
     libraryDependencies ++= greenProjectDeps
   )
 
-lazy val blackProject = project
-  .in(file("blackProject"))
+lazy val black = project
+  .in(file("black"))
   .settings(commonSettings())
   .settings(
     version := "0.1",
@@ -38,8 +40,8 @@ lazy val blackProject = project
     libraryDependencies ++= blackProjectDeps
   )
 
-lazy val anService = project
-  .in(file("anService"))
+lazy val an = project
+  .in(file("an"))
   .settings(commonSettings())
   .settings(
     version := "0.1",
