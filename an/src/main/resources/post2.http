@@ -6,14 +6,14 @@ Content-Type: application/json
 {
   "client": {
     "name": "Ilnur",
+    "phone": "87623187456",
     "mail": "serbaevilnur@mail.ru"
   },
   "houseInfo": {
-    "price": 100000,
-    "region": "BAR",
-    "rooms": 4,
-    "houseType": "flats"
+    "stage": "На стадии строительства",
+    "houseType": "Квартира",
+    "rooms": "4",
+    "price": "€50000 - €100000",
+    "date": "next month"
   }
 }
-
-###

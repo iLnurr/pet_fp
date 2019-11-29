@@ -66,7 +66,15 @@ object http {
               logger.debug(s"Query \n$q\n")
               q
             }
-            records <- db.getRecords(query).map(_._2)
+            records <- db
+              .getRecords(query)
+              .map(_._2)
+              .handleErrorWith { er =>
+                IO.pure {
+                  logger.error("DB ERROR", er)
+                  List()
+                }
+              }
             _ <- sendToMail(
               info.client.mail,
               "search result by quiz from tradegoria.com",
