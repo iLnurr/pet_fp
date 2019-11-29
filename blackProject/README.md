@@ -3,6 +3,10 @@
 ### Websockets API
 #### Authentication 
 
+### TODO
+DbReaderImpl, DbWriterImpl = Doobie + Postgres
+MessageReaderImpl, MessageWriterImpl = KafkaStreams
+
 ### Start
 choose available port: for example: 9003
 `java -DPORT=9003 -jar fs2WSserver-assembly-0.1.jar`
