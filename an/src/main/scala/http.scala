@@ -34,24 +34,10 @@ object http {
     ExecutionContext.fromExecutor(Executors.newCachedThreadPool())
   private val blockingCS: ContextShift[IO] =
     IO.contextShift(blockingEC)
-  lazy val file = Files
-    .write(
-      Paths.get(new File("quiz.html").getAbsolutePath),
-      quiz.html.getBytes(java.nio.charset.Charset.forName("CP1251"))
-    )
-    .toFile
   private def route(implicit xa: Transactor[IO]) = {
     implicit val cs: ContextShift[IO] = blockingCS
     HttpRoutes
       .of[IO] {
-        case request @ GET -> Root / "quiz.html" =>
-          StaticFile
-            .fromFile(
-              file,
-              blockingEC,
-              Some(request)
-            )
-            .getOrElseF(NotFound())
         case req @ POST ->
             Root / "records" / "body" / "mail" / mail =>
           for {
@@ -68,12 +54,22 @@ object http {
         case req @ POST ->
             Root / "records" / "body" / "query" =>
           for {
-            info    <- req.as[QueryInfo]
-            _       <- IO(logger.debug(s"Got request, info=$info"))
-            records <- db.getRecords(db.constructQuery(info)).map(_._2)
+            info <- req.as[QueryInfo]
+            _ <- IO(
+              logger
+                .debug(
+                  s"Got request \nbody=${req.as[String].unsafeRunSync()}, \ninfo=$info"
+                )
+            )
+            query <- IO.pure {
+              val q = db.constructQuery(info)
+              logger.debug(s"Query \n$q\n")
+              q
+            }
+            records <- db.getRecords(query).map(_._2)
             _ <- sendToMail(
               info.client.mail,
-              "search result by quiz from tradegoria",
+              "search result by quiz from tradegoria.com",
               "sorry but right now we not found anything",
               records
             )
@@ -109,7 +105,7 @@ object http {
         logger.debug(s"Send records to mail: $mail. \n Records: $records")
         mailer.send(subject, records.mkString(","), mail)
       } else {
-        logger.debug(s"Not found anything, send info to mail: $mail.")
+        logger.debug(s"Not found, send info to mail: $mail.")
         mailer
           .send(
             subjectNotFound,
