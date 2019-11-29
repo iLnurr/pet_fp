@@ -1,19 +1,29 @@
 import cats.effect.IO
+import com.dimafeng.testcontainers.MySQLContainer
 import db.{Data, Headers}
 import doobie.Transactor
 import doobie.implicits._
 import model.GetInfo
 import org.scalatest.{Assertion, FlatSpec, Matchers}
+import conf._
 
 class DbSpec extends FlatSpec with Matchers {
   behavior.of("DOOBIE")
 
+  val mysql = new MySQLContainer(
+    databaseName  = Some("db"),
+    mysqlUsername = Some(dbUser),
+    mysqlPassword = Some(dbPass)
+  )
+  lazy val mysqlUrl = mysql.jdbcUrl
+
   it should "properly work script" in {
+    mysql.start()
     check()
   }
 
   def check(): Assertion = {
-    implicit val xa = db.startTransactor()
+    implicit val xa = db.startTransactor(url = mysqlUrl)
     def populate(
       id2:       Long,
       name:      String,

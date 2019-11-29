@@ -6,10 +6,10 @@ import org.scalatest.{FlatSpec, Matchers}
 class SystemSpec extends FlatSpec with Matchers {
   behavior.of("WebsocketServer")
 
-  val kafkaContainer        = new KafkaContainer()
-  val postgreSQLContainer   = new PostgreSQLContainer()
-  val kafkaBootstrapServers = kafkaContainer.container.getBootstrapServers
-  val postgresUrl           = postgreSQLContainer.jdbcUrl
+  val kafkaContainer             = new KafkaContainer()
+  val postgreSQLContainer        = new PostgreSQLContainer()
+  lazy val kafkaBootstrapServers = kafkaContainer.container.getBootstrapServers
+  lazy val postgresUrl           = postgreSQLContainer.jdbcUrl
 
   it should "properly register clients" in {}
   it should "properly authenticate clients" in {}

@@ -15,12 +15,17 @@ object db {
   val dbLogger         = Logger("db")
   implicit lazy val cs = IO.contextShift(ExecutionContexts.synchronous)
 
-  def startTransactor(): Aux[IO, Unit] =
+  def startTransactor(
+    driver: String = dbDriver,
+    url:    String = dbUrl,
+    user:   String = dbUser,
+    pass:   String = dbPass
+  ): Aux[IO, Unit] =
     Transactor.fromDriverManager[IO](
-      driver = dbDriver,
-      url    = dbUrl,
-      user   = dbUser,
-      pass   = dbPass
+      driver = driver,
+      url    = url,
+      user   = user,
+      pass   = pass
     )
 
   def constructQuery(queryInfo: QueryInfo): String =
