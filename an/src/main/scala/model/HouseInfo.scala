@@ -1,8 +1,10 @@
 package model
 
 case class HouseInfo(
-  price:     Long,
-  region:    Option[String],
-  rooms:     Int,
-  houseType: String
+  stage:     String,
+  houseType: String,
+  rooms:     String,
+  price:     String,
+  date:      String,
+  region:    Option[String]
 )

@@ -36,9 +36,9 @@ object db {
         kvEq = Map("houseType" -> queryInfo.houseInfo.houseType) ++ queryInfo.houseInfo.region
             .map(r => Map("region" -> r))
             .getOrElse(Map()),
-        kvMore = Map("rooms" -> (queryInfo.houseInfo.rooms - 1).toString),
+        kvMore = Map("rooms" -> (1).toString), // TODO queryInfo.houseInfo.rooms -
         kvLess = Map(
-          "price" -> (queryInfo.houseInfo.price + 1).toString
+          "price" -> (1).toString // TODO
         )
       )
     )

@@ -1,3 +1,3 @@
 package model
 
-case class QueryInfo(client: Client, houseInfo: HouseInfo)
+case class QueryInfo(client: ClientInfo, houseInfo: HouseInfo)

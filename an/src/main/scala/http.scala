@@ -15,7 +15,7 @@ import doobie.util.transactor.Transactor
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.syntax._
-import model.{Client, GetInfo, HouseInfo, QueryInfo}
+import model.{ClientInfo, GetInfo, HouseInfo, QueryInfo}
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.dsl.io._
@@ -60,6 +60,7 @@ object http {
             _ <- sendToMail(
               mail,
               "search result by quiz from tradegoria",
+              "sorry but right now we not found anything",
               records
             )
             resp <- Ok(records.mkString(",").asJson)
@@ -68,10 +69,12 @@ object http {
             Root / "records" / "body" / "query" =>
           for {
             info    <- req.as[QueryInfo]
+            _       <- IO(logger.debug(s"Got request, info=$info"))
             records <- db.getRecords(db.constructQuery(info)).map(_._2)
             _ <- sendToMail(
               info.client.mail,
               "search result by quiz from tradegoria",
+              "sorry but right now we not found anything",
               records
             )
             resp <- Ok(records.mkString(",").asJson)
@@ -93,15 +96,26 @@ object http {
       .drain
       .map(_ => ExitCode.Success)
 
-  private def sendToMail(mail: String, subject: String, records: Data)(
-    implicit cs:               ContextShift[IO]
+  private def sendToMail(
+    mail:            String,
+    subject:         String,
+    subjectNotFound: String,
+    records:         Data
+  )(
+    implicit cs: ContextShift[IO]
   ) = IO.fromFuture(
     IO {
       if (records.nonEmpty) {
         logger.debug(s"Send records to mail: $mail. \n Records: $records")
         mailer.send(subject, records.mkString(","), mail)
       } else {
-        Future.unit
+        logger.debug(s"Not found anything, send info to mail: $mail.")
+        mailer
+          .send(
+            subjectNotFound,
+            "But you can look another houses: https://tradegoria.com",
+            mail
+          )
       }
     }
   )
