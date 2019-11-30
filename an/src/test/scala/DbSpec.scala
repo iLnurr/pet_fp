@@ -6,6 +6,7 @@ import doobie.implicits._
 import model.GetInfo
 import org.scalatest.{Assertion, BeforeAndAfterAll, FlatSpec, Matchers}
 import doobie.util.fragment.Fragment
+import custom.queries._
 
 class DbSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   behavior.of("DOOBIE")
@@ -72,7 +73,7 @@ class DbSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
       kvLess:      Seq[(String, String)]
     )(implicit xa: Transactor[IO]): IO[(Headers, Data)] =
       db.getRecords(
-        db.constructQuery(
+        constructQuery(
           GetInfo(tableName, fields, kvEq.toMap, kvMore.toMap, kvLess.toMap)
         )
       )

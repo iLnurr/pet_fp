@@ -21,7 +21,7 @@ import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.implicits._
 import db._
-
+import custom.queries._
 import scala.concurrent.{ExecutionContext, Future}
 
 object http {
@@ -42,7 +42,7 @@ object http {
             Root / "records" / "body" / "mail" / mail =>
           for {
             info    <- req.as[GetInfo]
-            records <- db.getRecords(db.constructQuery(info)).map(_._2)
+            records <- db.getRecords(constructQuery(info)).map(_._2)
             _ <- sendToMail(
               mail,
               "search result by quiz from tradegoria",
@@ -62,7 +62,7 @@ object http {
                 )
             )
             query <- IO.pure {
-              val q = db.constructQuery(info)
+              val q = constructQuery(info)
               logger.debug(s"Query \n$q\n")
               q
             }

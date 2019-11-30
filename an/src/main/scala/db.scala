@@ -5,7 +5,6 @@ import conf._
 import com.typesafe.scalalogging.Logger
 import cats.implicits._
 import doobie.util.transactor.Transactor.Aux
-import model.{GetInfo, QueryInfo}
 
 object db {
   // https://github.com/tpolecat/doobie/blob/master/modules/example/src/main/scala/example/Dynamic.scala
@@ -27,43 +26,6 @@ object db {
       user   = user,
       pass   = pass
     )
-
-  def constructQuery(queryInfo: QueryInfo): String =
-    constructQuery(
-      GetInfo(
-        tableName = "test",
-        fields    = Seq("price", "region", "rooms", "houseType"),
-        kvEq = Map("houseType" -> queryInfo.houseInfo.houseType) ++ queryInfo.houseInfo.region
-            .map(r => Map("region" -> r))
-            .getOrElse(Map()),
-        kvMore = Map(
-          "rooms" -> (queryInfo.houseInfo.rooms.toInt - 1).toString,
-          "price" -> (queryInfo.houseInfo.priceFrom - 1).toString
-        ),
-        kvLess = Map(
-          "price" -> (queryInfo.houseInfo.priceTo + 1).toString
-        )
-      )
-    )
-
-  def constructQuery(getInfo: GetInfo): String = {
-    import getInfo._
-    val kvEqQ: String =
-      kvEq.map { case (k, v) => k + "=" + s"'$v'" }.mkString("\n AND ")
-    val kvMoreQ: String =
-      kvMore.map { case (k, v) => k + ">" + v }.mkString("\n AND ")
-    val kvLessQ: String =
-      kvLess.map { case (k, v) => k + "<" + v }.mkString("\n AND ")
-
-    val whereFragment =
-      if (kvEq.nonEmpty || kvLess.nonEmpty || kvMore.nonEmpty)
-        s"where \n$kvEqQ \n ${if (kvMoreQ.nonEmpty) s"AND $kvMoreQ" else ""} \n ${if (kvLessQ.nonEmpty)
-          s"AND $kvLessQ"
-        else ""}"
-      else ""
-
-    s"select ${fields.mkString(",")} from $tableName $whereFragment"
-  }
 
   def getRecords(
     query:       String
