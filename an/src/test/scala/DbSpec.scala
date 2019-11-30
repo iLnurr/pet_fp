@@ -4,26 +4,54 @@ import db.{Data, Headers}
 import doobie.Transactor
 import doobie.implicits._
 import model.GetInfo
-import org.scalatest.{Assertion, FlatSpec, Matchers}
-import conf._
+import org.scalatest.{Assertion, BeforeAndAfterAll, FlatSpec, Matchers}
+import doobie.util.fragment.Fragment
 
-class DbSpec extends FlatSpec with Matchers {
+class DbSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   behavior.of("DOOBIE")
 
-  val mysql = new MySQLContainer(
-    databaseName  = Some("db"),
-    mysqlUsername = Some(dbUser),
-    mysqlPassword = Some(dbPass)
-  )
-  lazy val mysqlUrl = mysql.jdbcUrl
-
-  it should "properly work script" in {
+  val mysql = new MySQLContainer(databaseName = Some("tradegoria"))
+  override protected def beforeAll(): Unit =
     mysql.start()
-    check()
+  override protected def afterAll(): Unit =
+    mysql.stop()
+
+  implicit lazy val xa = db.startTransactor(
+    url  = mysql.jdbcUrl,
+    user = mysql.username,
+    pass = mysql.password
+  )
+  it should "properly work with test db" in {
+    check(xa)
   }
 
-  def check(): Assertion = {
-    implicit val xa = db.startTransactor(url = mysqlUrl)
+  it should "properly work with trad db" in {
+    checkTrad(xa)
+  }
+
+  def checkTrad(implicit xa: Transactor[IO]): Assertion = {
+    val program = for {
+      _ <- Fragment
+        .const(queries.createProducts)
+        .update
+        .run
+        .transact(xa)
+      _ <- Fragment
+        .const(queries.createSiteContent)
+        .update
+        .run
+        .transact(xa)
+      products <- sql"select * from tradegoria.modx_ms2_products"
+        .query[(String, String)]
+        .to[List]
+        .transact(xa)
+    } yield {
+      products.size shouldBe 0
+    }
+
+    program.unsafeRunSync()
+  }
+  def check(implicit xa: Transactor[IO]): Assertion = {
     def populate(
       id2:       Long,
       name:      String,
@@ -33,7 +61,7 @@ class DbSpec extends FlatSpec with Matchers {
       houseType: String,
       region:    String
     ) =
-      sql"insert into db.test(id2,name,title,price,rooms,houseType,region) values ($id2,$name,$title,$price,$rooms,$houseType,$region)".update.run
+      sql"insert into test(id2,name,title,price,rooms,houseType,region) values ($id2,$name,$title,$price,$rooms,$houseType,$region)".update.run
         .transact(xa)
 
     def getRecords(
@@ -78,9 +106,7 @@ class DbSpec extends FlatSpec with Matchers {
       kvMore    = Seq("id2" -> "-1")
     )
     val program = for {
-      _ <- sql"create database if not exists db".update.run
-        .transact(xa)
-      _ <- sql"create table if not exists db.test (id bigint primary key auto_increment, id2 bigint, name text, title text, price bigint, rooms bigint, houseType text, region text)".update.run
+      _ <- sql"create table if not exists test (id bigint primary key auto_increment, id2 bigint, name text, title text, price bigint, rooms bigint, houseType text, region text)".update.run
         .transact(xa)
       _ <- populate(0, "n", "n", 10, 2, "flats", "BAR")
       _ <- populate(1, "n1", "n1", 100, 8, "apartment", "BAR")
