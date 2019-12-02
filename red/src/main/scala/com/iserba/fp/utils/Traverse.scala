@@ -13,8 +13,8 @@ trait Traverse[F[_]] extends Functor[F] { self =>
     traverse[Id, A, B](fa)(f)(idMonad)
   def compose[G[_]](
     implicit G: Traverse[G]
-  ): Traverse[({ type f[x] = F[G[x]] })#f] =
-    new Traverse[({ type f[x] = F[G[x]] })#f] {
+  ): Traverse[Lambda[x => F[G[x]]]] =
+    new Traverse[Lambda[x => F[G[x]]]] {
       def traverse[M[_]: Applicative, A, B](
         fa: F[G[A]]
       )(f:  A => M[B]): M[F[G[B]]] =

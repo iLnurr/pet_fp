@@ -30,7 +30,7 @@ package object fp {
   implicit val monadCatchImpl: Monad.MonadCatch[ParF] =
     instances.FutureM.monadCatchFuture
   val parFIO: IOWrap[ParF] = IOWrap[ParF](instances.FutureM.parFuture)
-  implicit val ioMC: Monad.MonadCatch[({ type f[a] = Free[ParF, a] })#f] =
+  implicit val ioMC: Monad.MonadCatch[Free[ParF, *]] =
     parFIO.ioMC
 
   type IO[A] = parFIO.IO[A] // Free[ParF,A]

@@ -25,8 +25,8 @@ object Free {
   def liftF[F[_], A](f: F[A]): Free[F, A] =
     Suspend[F, A](f)
 
-  def freeMonad[F[_]]: Monad[({ type f[a] = Free[F, a] })#f] =
-    new Monad[({ type f[a] = Free[F, a] })#f] {
+  def freeMonad[F[_]]: Monad[Free[F, *]] =
+    new Monad[Free[F, *]] {
       override def unit[A](a: => A): Free[F, A] =
         Return[F, A](a)
       override def flatMap[A, B](

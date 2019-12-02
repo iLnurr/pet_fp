@@ -10,10 +10,10 @@ import scala.util.{Failure, Success, Try}
 trait IOWrap[F[_]] {
   type IO[A] = Free[F, A]
   implicit def parF: Par[F]
-  implicit val ioFMonad: Monad[({ type f[a] = Free[F, a] })#f] =
+  implicit val ioFMonad: Monad[Free[F, *]] =
     Free.freeMonad[F]
-  implicit val ioMC: MonadCatch[({ type f[a] = Free[F, a] })#f] =
-    new MonadCatch[({ type f[a] = Free[F, a] })#f] {
+  implicit val ioMC: MonadCatch[Free[F, *]] =
+    new MonadCatch[Free[F, *]] {
       def attempt[A](a: Free[F, A]): Free[F, Either[Throwable, A]] =
         Try(
           parF.parRun(

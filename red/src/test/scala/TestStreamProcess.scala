@@ -12,7 +12,7 @@ import scala.util.Random
 object TestStreamProcess extends App {
   import com.iserba.fp.parFIO._
   implicit val optMC: MonadCatch[Option] =
-    new MonadCatch[({ type f[a] = Option[a] })#f] {
+    new MonadCatch[Option[*]] {
       override def attempt[A](a: Option[A]): Option[Either[Throwable, A]] =
         a.map { v =>
           Right(v)
