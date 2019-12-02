@@ -85,12 +85,11 @@ object Free {
       case FlatMap(Suspend(r), f) => G.flatMap(t(r))(a => runFree(f(a))(t))
       case _                      => sys.error("Impossible, since `step` eliminates these cases")
     }
-//  def translate[F[_],G[_],A](f: Free[F,A])(fg: F ~> G): Free[G,A] = {
-//    type FreeG[A] = Free[G,A]
-//    val tr = new Translate[F,FreeG] {
-//      override def apply[A](f: F[A]): Free[G,A] = Suspend(fg(f))
-//    }
-//
-//    runFree(f)(tr)(freeMonad[G])
-//  }
+  def translate[F[_], G[_], A](f: Free[F, A])(fg: F ~> G): Free[G, A] = {
+    val tr = new Translate[F, Lambda[a => Free[G, a]]] {
+      override def apply[AA](f: F[AA]): Free[G, AA] = Suspend(fg(f))
+    }
+
+    runFree(f)(tr)(freeMonad[G])
+  }
 }
