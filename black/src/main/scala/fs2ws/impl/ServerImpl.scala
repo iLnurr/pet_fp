@@ -76,7 +76,7 @@ class ServerImpl(
     }
 
   import scala.concurrent.duration._
-  private def push(
+  private def push( // TODO rm - instead use each client MessageReader
     clients: Clients[IO],
     client:  Client[IO]
   ): Stream[IO, Message] = {

@@ -18,14 +18,15 @@ object State {
     userType:   Option[String] = None,
     subscribed: Boolean        = false
   ) {
-    private val msgQueue = ListBuffer[Message]()
-    def add(message: Message): Unit = {
+    private val msgQueue = ListBuffer[Message]() // TODO use kafka
+    def add(message: Message): Unit = { // TODO rm - ConnectedClients will write to topic on broadcast
       println(s"Client $id: Add $message")
       msgQueue.append(message)
     }
 
-    def take: List[Message] = {
-      val result = msgQueue.toList
+    def take
+      : List[Message] = { // TODO instead of List[Message] => Stream[Message]
+      val result = msgQueue.toList // TODO MessageReader from outputTopic
       msgQueue.clear()
       result
     }
@@ -72,7 +73,7 @@ object State {
         .map { all =>
           val filtered = all.values.toList.filter(filterF)
           println(s"Broadcast $message to clients ${filtered}")
-          filtered.foreach(_.add(message))
+          filtered.foreach(_.add(message)) // TODO MessageWriter to outputTopic
         }
 
     def get(id: UUID): F[Option[Client[F]]] =

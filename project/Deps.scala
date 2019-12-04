@@ -18,6 +18,8 @@ object Deps {
 
     val mailer = "2.0.0"
 
+    val kafkaStreams = "2.3.0"
+
     val scalaTest             = "3.0.8"
     val testcontainers        = "0.33.0"
     val kafkaTestContainer    = "1.12.3"
@@ -32,11 +34,12 @@ object Deps {
   )
 
   private lazy val testDeps = Seq(
-    "org.scalatest"      %% "scalatest"            % Versions.scalaTest,
-    "com.dimafeng"       %% "testcontainers-scala" % Versions.testcontainers,
-    "org.testcontainers" % "postgresql"            % Versions.postgresTestcontainer,
-    "org.testcontainers" % "kafka"                 % Versions.kafkaTestContainer,
-    "org.testcontainers" % "mysql"                 % Versions.mysqlTestcontainer
+    "org.scalatest"      %% "scalatest"               % Versions.scalaTest,
+    "com.dimafeng"       %% "testcontainers-scala"    % Versions.testcontainers,
+    "org.testcontainers" % "postgresql"               % Versions.postgresTestcontainer,
+    "org.testcontainers" % "kafka"                    % Versions.kafkaTestContainer,
+    "org.testcontainers" % "mysql"                    % Versions.mysqlTestcontainer,
+    "org.apache.kafka"   % "kafka-streams-test-utils" % Versions.kafkaStreams
   ).map(_ % Test)
 
   private lazy val cats = Seq(
@@ -107,13 +110,19 @@ object Deps {
     "com.github.daddykotex" %% "courier" % Versions.mailer
   )
 
+  private lazy val kafkaStreams = Seq(
+    "org.apache.kafka" % "kafka-streams"        % Versions.kafkaStreams,
+    "org.apache.kafka" % "kafka-clients"        % Versions.kafkaStreams,
+    "org.apache.kafka" %% "kafka-streams-scala" % Versions.kafkaStreams
+  )
+
   lazy val redProjectDeps: Seq[ModuleID] = Seq()
 
   lazy val greenProjectDeps
     : Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++ conf ++ shapeless
 
   lazy val blackProjectDeps
-    : Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ conf ++ doobie ++ logging ++ testDeps
+    : Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ conf ++ doobie ++ kafkaStreams ++ logging ++ testDeps
 
   lazy val anServiceDeps: Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++
     conf ++

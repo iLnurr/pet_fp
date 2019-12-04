@@ -5,6 +5,7 @@ import java.util.UUID
 import cats.tagless.finalAlg
 import fs2ws.Domain.{DBEntity, Message}
 import fs2ws.impl.State._
+import fs2.Stream
 
 @finalAlg
 trait JsonEncoder[F[_], A] {
@@ -14,6 +15,17 @@ trait JsonEncoder[F[_], A] {
 @finalAlg
 trait JsonDecoder[F[_], A] {
   def fromJson(json: String): F[A]
+}
+
+@finalAlg
+trait ClientAlgebra[F] {
+  def id:         UUID
+  def username:   Option[String]
+  def usertype:   Option[String]
+  def subscribed: Boolean
+  def msgs:       Stream[F, Message]
+  def privileged: Boolean
+  def updateState(message: Message): ClientAlgebra[F]
 }
 
 @finalAlg
@@ -48,12 +60,11 @@ trait DbWriterAlgebra[F[_], T <: DBEntity] {
 }
 
 @finalAlg
-trait MessageReaderAlgebra[F[_]] {
-  def consume[A](msgHandler: Message => F[A]): F[List[A]]
+trait MessageReaderAlgebra[F[_]] { // https://fd4s.github.io/fs2-kafka/docs/overview OR https://kafka.apache.org/documentation/streams/
+  def consume[A](): Stream[F, A]
 }
 
 @finalAlg
 trait MessageWriterAlgebra[F[_]] {
-  def send(msg:      Message):      F[Unit]
-  def sendMany(msgs: Seq[Message]): F[Unit]
+  def send(msg: Message): F[Unit]
 }

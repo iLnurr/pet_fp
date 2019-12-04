@@ -15,7 +15,7 @@ class Services[F[_]: Sync](
     case query: Query =>
       processQuery(query)
     case msg =>
-      Sync[F].raiseError(new RuntimeException(s"Can't handle $msg"))
+      Sync[F].raiseError(new RuntimeException(s"Can't handle $msg")) // TODO avoid exceptions
   }
 
   def tableList: F[Message] =

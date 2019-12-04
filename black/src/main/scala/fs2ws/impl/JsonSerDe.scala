@@ -29,3 +29,10 @@ object JsonSerDe {
         IO.pure(value.asJson.noSpaces)
     }
 }
+
+object MessageSerDe {
+  def decodeMsg: String  => Option[Message] = decode[Message](_).toOption
+  def encodeMsg: Message => String          = _.asJson.noSpaces
+  implicit val genDevConfig: Configuration =
+    Configuration.default.withDiscriminator("$type")
+}
