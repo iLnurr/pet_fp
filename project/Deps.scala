@@ -10,7 +10,6 @@ object Deps {
     val logback      = "1.2.3"
 
     val circe         = "0.11.1"
-    val fs2_http      = "0.4.0"
     val http4sVersion = "0.20.13"
 
     val doobieVersion  = "0.8.6"
@@ -54,10 +53,6 @@ object Deps {
   )
   private lazy val catsTagless = Seq(
     "org.typelevel" %% "cats-tagless-macros" % Versions.catsTagless
-  )
-
-  private lazy val fs2 = Seq(
-    "com.spinoco" %% "fs2-http" % Versions.fs2_http
   )
 
   private lazy val enumeratum = Seq(
@@ -127,7 +122,7 @@ object Deps {
     : Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++ conf ++ shapeless
 
   lazy val blackProjectDeps
-    : Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ conf ++ doobie ++ fs2_kafka ++ logging ++ testDeps
+    : Seq[ModuleID] = http4s ++ cats ++ catsEffect ++ catsTagless ++ circe ++ conf ++ doobie ++ fs2_kafka ++ logging ++ testDeps
 
   lazy val anServiceDeps: Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++
     conf ++

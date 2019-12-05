@@ -2,7 +2,6 @@ package fs2ws
 
 import cats.effect.{ConcurrentEffect, ExitCode, IO, IOApp}
 import com.typesafe.scalalogging.Logger
-import fs2ws.impl.JsonSerDe._
 import fs2ws.impl.{InMemoryDB, ServerImpl}
 import fs2ws.impl.State.ConnectedClients
 
@@ -17,7 +16,7 @@ object Main extends IOApp {
       clients <- ConnectedClients.create[IO]
       _ <- new ServerImpl(
         clients,
-        startMsgStream(encoder.toJson, decoder.fromJson, _),
+        Http4sWebsocketServer.start(_),
         new Services[IO](
           userReader  = userReader,
           tableReader = tableReader,

@@ -1,6 +1,6 @@
 package fs2ws.impl
 
-import cats.effect.{ConcurrentEffect, ContextShift, IO, Timer}
+import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, IO, Timer}
 import fs2.Stream
 import fs2ws.Domain._
 import fs2ws._
@@ -8,7 +8,7 @@ import fs2ws.impl.State._
 
 class ServerImpl(
   val clients:  Clients[IO],
-  val core:     MsgStreamPipe[IO] => Stream[IO, Unit],
+  val core:     MsgStreamPipe[IO] => Stream[IO, ExitCode],
   val services: Services[IO]
 )(
   implicit ce:  ConcurrentEffect[IO],
