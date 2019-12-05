@@ -4,35 +4,27 @@ import java.util.UUID
 
 import cats.Monad
 import cats.effect.concurrent.Ref
-import cats.effect.{Concurrent, Sync}
-import fs2ws.Clients
+import cats.effect.{ConcurrentEffect, ContextShift, Sync, Timer}
+import com.typesafe.scalalogging.Logger
+import fs2.Stream
 import fs2ws.Domain._
-
-import scala.collection.mutable.ListBuffer
+import fs2ws.{ClientAlgebra, Clients}
 
 object State {
+  private lazy val logger = Logger("clients")
 
-  case class Client[F[_]: Monad: Concurrent](
+  case class Client[F[_]: Monad: ConcurrentEffect: ContextShift: Timer](
     id:         UUID           = UUID.randomUUID(),
     username:   Option[String] = None,
-    userType:   Option[String] = None,
+    usertype:   Option[String] = None,
     subscribed: Boolean        = false
-  ) {
-    private val msgQueue = ListBuffer[Message]() // TODO use kafka
-    def add(message: Message): Unit = { // TODO rm - ConnectedClients will write to topic on broadcast
-      println(s"Client $id: Add $message")
-      msgQueue.append(message)
-    }
+  ) extends ClientAlgebra[F] {
+    private val consumer = new MessageReaderImpl[F]
 
-    def take
-      : List[Message] = { // TODO instead of List[Message] => Stream[Message]
-      val result = msgQueue.toList // TODO MessageReader from outputTopic
-      msgQueue.clear()
-      result
-    }
+    def msgs: Stream[F, Message] = consumer.consume()
 
     def privileged: Boolean =
-      userType.contains(UserType.ADMIN)
+      usertype.contains(UserType.ADMIN)
 
     def updateState(message: Message): Client[F] =
       message match {
@@ -43,7 +35,7 @@ object State {
         case login(un, _) =>
           copy(username = Some(un))
         case login_successful(user_type) =>
-          copy(userType = Some(user_type))
+          copy(usertype = Some(user_type))
         case _: login_failed =>
           Client(id) // clear username, userType, subscribed info
         case _ =>
@@ -52,34 +44,31 @@ object State {
   }
 
   import cats.syntax.functor._
-  case class ConnectedClients[F[_]: Sync](val ref: Ref[F, Map[UUID, Client[F]]])
-      extends Clients[F] {
-    def register(state: Client[F]): F[Client[F]] = {
-      println(s"ConnectedClients: Register $state")
+  case class ConnectedClients[F[_]: Sync: ConcurrentEffect: ContextShift: Timer](
+    val ref: Ref[F, Map[UUID, ClientAlgebra[F]]]
+  ) extends Clients[F] {
+    private val producer = new MessageWriterImpl[F]
+    def register(state: ClientAlgebra[F]): F[ClientAlgebra[F]] = {
+      logger.info(s"ConnectedClients: Register $state")
       ref.modify { oldClients =>
         (oldClients + (state.id -> state), state)
       }
     }
 
-    def unregister(c: Client[F]): F[Unit] = {
-      println(s"ConnectedClients: Unregister $c")
+    def unregister(c: ClientAlgebra[F]): F[Unit] = {
+      logger.info(s"ConnectedClients: Unregister $c")
       ref.update { old =>
         old - c.id
       }
     }
 
-    def broadcast(message: Message, filterF: Client[F] => Boolean): F[Unit] =
-      ref.get
-        .map { all =>
-          val filtered = all.values.toList.filter(filterF)
-          println(s"Broadcast $message to clients ${filtered}")
-          filtered.foreach(_.add(message)) // TODO MessageWriter to outputTopic
-        }
+    def broadcast(message: Message): F[Unit] =
+      producer.send(message).compile.drain
 
-    def get(id: UUID): F[Option[Client[F]]] =
+    def get(id: UUID): F[Option[ClientAlgebra[F]]] =
       ref.get.map(_.get(id))
 
-    def update(toUpdate: Client[F]): F[Unit] =
+    def update(toUpdate: ClientAlgebra[F]): F[Unit] =
       ref
         .modify { old =>
           val updatedClient = old.get(toUpdate.id).map(_ => toUpdate)
@@ -92,9 +81,10 @@ object State {
   }
 
   object ConnectedClients {
-    def create[F[_]: Sync]: F[ConnectedClients[F]] =
+    def create[F[_]: Sync: ConcurrentEffect: ContextShift: Timer]
+      : F[ConnectedClients[F]] =
       Ref[F]
-        .of(Map.empty[UUID, Client[F]])
+        .of(Map.empty[UUID, ClientAlgebra[F]])
         .map(ref => new ConnectedClients[F](ref))
   }
 

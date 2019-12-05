@@ -12,6 +12,10 @@ MessageReaderImpl, MessageWriterImpl = KafkaStreams
 choose available port: for example: 9003
 `java -DPORT=9003 -jar fs2WSserver-assembly-0.1.jar`
 
+or
+
+`sbt "project black" run`
+
 ### url 
 `ws://localhost:9003/ws_api`
 

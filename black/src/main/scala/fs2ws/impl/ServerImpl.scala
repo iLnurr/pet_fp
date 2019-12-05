@@ -1,6 +1,6 @@
 package fs2ws.impl
 
-import cats.effect.{ConcurrentEffect, IO, Timer}
+import cats.effect.{ConcurrentEffect, ContextShift, IO, Timer}
 import fs2.Stream
 import fs2ws.Domain._
 import fs2ws._
@@ -10,9 +10,12 @@ class ServerImpl(
   val clients:  Clients[IO],
   val core:     MsgStreamPipe[IO] => Stream[IO, Unit],
   val services: Services[IO]
-)(implicit ce:  ConcurrentEffect[IO], timer: Timer[IO])
-    extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
-  override def handler: (Message, Client[IO]) => IO[Message] =
+)(
+  implicit ce:  ConcurrentEffect[IO],
+  timer:        Timer[IO],
+  contextShift: ContextShift[IO]
+) extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
+  override def handler: (Message, ClientAlgebra[IO]) => IO[Message] =
     (req, clientState) =>
       if (req.isInstanceOf[Command] && !clientState.privileged) {
         IO.pure(not_authorized())
@@ -41,13 +44,13 @@ class ServerImpl(
                 } yield response
               }
 
-              inputStream.merge(push(clients, client))
+              inputStream.merge(client.msgs)
             }
         }
 
   private def updateStateAsync(
     clients:     Clients[IO],
-    clientState: Client[IO],
+    clientState: ClientAlgebra[IO],
     request:     Message,
     response:    Message
   ): Unit =
@@ -56,7 +59,7 @@ class ServerImpl(
 
   private def updateState(
     clients:     Clients[IO],
-    clientState: Client[IO],
+    clientState: ClientAlgebra[IO],
     request:     Message,
     response:    Message
   ): IO[Unit] =
@@ -64,7 +67,7 @@ class ServerImpl(
       case _: table_added | _: table_updated | _: table_removed =>
         services.tableList
           .flatMap { tableList =>
-            clients.broadcast(tableList, _.subscribed)
+            clients.broadcast(tableList)
           }
       case response =>
         clients
@@ -74,32 +77,4 @@ class ServerImpl(
               .updateState(response)
           )
     }
-
-  import scala.concurrent.duration._
-  private def push( // TODO rm - instead use each client MessageReader
-    clients: Clients[IO],
-    client:  Client[IO]
-  ): Stream[IO, Message] = {
-    val pushStream = Stream
-      .awakeEvery[IO](5.seconds)
-      .evalMap(
-        _ =>
-          clients.get(client.id).map {
-            case Some(client) =>
-              val messages = client.take
-              if (messages.nonEmpty) {
-                println(s"Push to client ${client} ${messages.mkString(",")}")
-                Stream
-                  .emits[IO, Message](messages)
-              } else {
-                Stream.empty
-              }
-            case None =>
-              Stream.empty
-          }
-      )
-      .flatten
-
-    pushStream
-  }
 }

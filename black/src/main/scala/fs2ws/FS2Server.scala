@@ -5,7 +5,7 @@ import java.nio.channels.AsynchronousChannelGroup
 import java.util.concurrent.Executors
 
 import cats.effect.{Concurrent, ConcurrentEffect, Timer}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.Logger
 import fs2._
 import scodec.Codec
 import spinoco.fs2.http
@@ -17,8 +17,7 @@ import spinoco.protocol.http._
 import scala.concurrent.duration._
 
 object FS2Server {
-  lazy val config = ConfigFactory.load()
-  lazy val port   = config.getInt("server.port")
+  private lazy val logger = Logger("FS2-Server")
   implicit val AG: AsynchronousChannelGroup =
     AsynchronousChannelGroup
       .withThreadPool(
@@ -36,9 +35,9 @@ object FS2Server {
       case Path(true, false, Seq("ws_api")) =>
         websocket
           .server[F, String, String](wsPipe, 1.second)(request, body)
-          .onFinalize(conc.delay { println(s"WS DONE") })
+          .onFinalize(conc.delay { logger.info(s"WS DONE") })
       case other =>
-        println(
+        logger.warn(
           s"Client try to connect to path=${other.segments.mkString("/", "/", "")}. \nBad request=$request"
         )
         Stream.empty
@@ -47,8 +46,8 @@ object FS2Server {
   def start[F[_]: ConcurrentEffect: Timer](
     wsPipe: Pipe[F, Frame[String], Frame[String]]
   ): Stream[F, Unit] =
-    Stream.emit[F, Unit](println(s"Start server on port $port")) ++
-    http.server[F](new InetSocketAddress("127.0.0.1", port))(
+    Stream.emit[F, Unit](logger.info(s"Start server on port ${conf.port}")) ++
+    http.server[F](new InetSocketAddress("127.0.0.1", conf.port))(
       service(_, _)(wsPipe)
     )
 }

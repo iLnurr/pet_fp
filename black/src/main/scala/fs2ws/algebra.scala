@@ -4,7 +4,6 @@ import java.util.UUID
 
 import cats.tagless.finalAlg
 import fs2ws.Domain.{DBEntity, Message}
-import fs2ws.impl.State._
 import fs2.Stream
 
 @finalAlg
@@ -18,7 +17,7 @@ trait JsonDecoder[F[_], A] {
 }
 
 @finalAlg
-trait ClientAlgebra[F] {
+trait ClientAlgebra[F[_]] {
   def id:         UUID
   def username:   Option[String]
   def usertype:   Option[String]
@@ -30,16 +29,16 @@ trait ClientAlgebra[F] {
 
 @finalAlg
 trait Clients[F[_]] {
-  def get(id:            UUID): F[Option[Client[F]]]
-  def register(c:        Client[F]): F[Client[F]]
-  def unregister(c:      Client[F]): F[Unit]
-  def broadcast(message: Message, filterF: Client[F] => Boolean): F[Unit]
-  def update(toUpdate:   Client[F]): F[Unit]
+  def get(id:            UUID):             F[Option[ClientAlgebra[F]]]
+  def register(c:        ClientAlgebra[F]): F[ClientAlgebra[F]]
+  def unregister(c:      ClientAlgebra[F]): F[Unit]
+  def broadcast(message: Message):          F[Unit]
+  def update(toUpdate:   ClientAlgebra[F]): F[Unit]
 }
 
 @finalAlg
 trait ServerAlgebra[F[_], I, O, StreamPipe[_[_]]] {
-  def handler: (I, Client[F]) => F[O]
+  def handler: (I, ClientAlgebra[F]) => F[O]
   def clients: Clients[F]
   def start(): F[Unit]
   def pipe:    StreamPipe[F]
@@ -60,11 +59,12 @@ trait DbWriterAlgebra[F[_], T <: DBEntity] {
 }
 
 @finalAlg
-trait MessageReaderAlgebra[F[_]] { // https://fd4s.github.io/fs2-kafka/docs/overview OR https://kafka.apache.org/documentation/streams/
-  def consume[A](): Stream[F, A]
+trait MessageReaderAlgebra[F[_], A] {
+  def consume(): Stream[F, A]
 }
 
 @finalAlg
-trait MessageWriterAlgebra[F[_]] {
-  def send(msg: Message): F[Unit]
+trait MessageWriterAlgebra[F[_], A] {
+  type Result
+  def send(msg: A): Stream[F, Result]
 }

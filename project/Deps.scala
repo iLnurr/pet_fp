@@ -19,6 +19,7 @@ object Deps {
     val mailer = "2.0.0"
 
     val kafkaStreams = "2.3.0"
+    val fs2_kafka    = "0.20.2"
 
     val scalaTest             = "3.0.8"
     val testcontainers        = "0.33.0"
@@ -116,13 +117,17 @@ object Deps {
     "org.apache.kafka" %% "kafka-streams-scala" % Versions.kafkaStreams
   )
 
+  private lazy val fs2_kafka = Seq(
+    "com.ovoenergy" %% "fs2-kafka" % Versions.fs2_kafka
+  )
+
   lazy val redProjectDeps: Seq[ModuleID] = Seq()
 
   lazy val greenProjectDeps
     : Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++ conf ++ shapeless
 
   lazy val blackProjectDeps
-    : Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ conf ++ doobie ++ kafkaStreams ++ logging ++ testDeps
+    : Seq[ModuleID] = fs2 ++ cats ++ catsEffect ++ catsTagless ++ circe ++ conf ++ doobie ++ fs2_kafka ++ logging ++ testDeps
 
   lazy val anServiceDeps: Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++
     conf ++
