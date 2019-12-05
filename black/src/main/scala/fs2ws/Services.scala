@@ -2,6 +2,8 @@ package fs2ws
 
 import cats.effect.Sync
 import cats.syntax.functor._
+import cats.syntax.applicative._
+import cats.syntax.either._
 import fs2ws.Domain._
 
 class Services[F[_]: Sync](
@@ -9,13 +11,13 @@ class Services[F[_]: Sync](
   tableReader: TableReader[F],
   tableWriter: TableWriter[F]
 ) {
-  def handleReq: Message => F[Message] = {
+  def handleReq: Message => F[Either[String, Message]] = {
     case command: Command =>
-      processCommand(command)
+      processCommand(command).map(Right(_))
     case query: Query =>
-      processQuery(query)
+      processQuery(query).map(Right(_))
     case msg =>
-      Sync[F].raiseError(new RuntimeException(s"Can't handle $msg")) // TODO avoid exceptions
+      s"Can't handle $msg".asLeft[Message].pure[F]
   }
 
   def tableList: F[Message] =

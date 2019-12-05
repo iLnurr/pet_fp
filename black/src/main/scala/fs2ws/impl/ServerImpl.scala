@@ -1,6 +1,7 @@
 package fs2ws.impl
 
 import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, IO, Timer}
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import fs2ws.Domain._
 import fs2ws._
@@ -15,12 +16,19 @@ class ServerImpl(
   timer:        Timer[IO],
   contextShift: ContextShift[IO]
 ) extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
+  private val logger = Logger("ServerImpl")
   override def handler: (Message, ClientAlgebra[IO]) => IO[Message] =
     (req, clientState) =>
       if (req.isInstanceOf[Command] && !clientState.privileged) {
         IO.pure(not_authorized())
       } else {
-        services.handleReq(req)
+        services.handleReq(req).map {
+          case Left(value) =>
+            logger.error(value)
+            empty
+          case Right(value) =>
+            value
+        }
       }
 
   override def start(): IO[Unit] =
