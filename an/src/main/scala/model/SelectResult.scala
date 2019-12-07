@@ -11,4 +11,40 @@ case class TradSearchResult(
 
 object TradSearchResult {
   val heads = List("Тип недвижимости", "Цена", "Описание", "Ссылка")
+
+  private def from(records: List[List[Any]]): List[TradSearchResult] =
+    records.flatMap {
+      case List(t, p, d, l) =>
+        Option(
+          TradSearchResult(t.toString, p.toString, d.toString, l.toString)
+        )
+      case _ => Option.empty[TradSearchResult]
+    }
+
+  def htmlTable(records: List[List[Any]]): String =
+    TradSearchResult
+      .from(records)
+      .map { searchResult =>
+        s"""
+             |<tr>
+             |  <td>${searchResult.`type`}</td>
+             |  <td>${searchResult.price}</td>
+             |  <td>${searchResult.description}</td>
+             |  <td>${searchResult.link}</td>
+             |</tr>
+             |""".stripMargin
+      }
+      .mkString(
+        """
+          |<table>
+          |   <tr>
+          |       <th>Тип недвижимости</th>
+          |       <th>Цена</th>
+          |       <th>Описание</th>
+          |       <th>Ссылка</th>
+          |   </tr>
+          |""".stripMargin,
+        "",
+        "</table>"
+      )
 }
