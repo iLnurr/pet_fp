@@ -17,7 +17,8 @@ object mailer {
 
   def send(
     subject: String,
-    text:    String,
+    content: String,
+    isHtml:  Boolean,
     to:      String,
     from:    String = mailerHost,
     cc:      Seq[String] = Seq()
@@ -26,7 +27,7 @@ object mailer {
       .from(from.addr)
       .to(to.addr)
       .subject(subject)
-      .content(Text(text))
+      .content(if (isHtml) Multipart().html(content) else Text(content))
       .cc(cc.map(_.addr): _*)
 
     mailer(envelop).map(

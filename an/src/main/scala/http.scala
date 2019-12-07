@@ -15,13 +15,14 @@ import doobie.util.transactor.Transactor
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.syntax._
-import model.{ClientInfo, GetInfo, HouseInfo, QueryInfo}
+import model.{ClientInfo, GetInfo, HouseInfo, QueryInfo, TradSearchResult}
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.dsl.io._
 import org.http4s.implicits._
 import db._
 import custom.queries._
+
 import scala.concurrent.{ExecutionContext, Future}
 
 object http {
@@ -110,15 +111,22 @@ object http {
   ) = IO.fromFuture(
     IO {
       if (records.nonEmpty) {
-        logger.debug(s"Send records to mail: $mail. \n Records: $records")
-        mailer.send(subject, records.mkString(","), mail)
+        logger.debug(s"Send records to mail: $mail. \n Records size: $records")
+
+        mailer.send(
+          subject = subject,
+          content = TradSearchResult.htmlTable(records),
+          isHtml  = true,
+          to      = mail
+        )
       } else {
         logger.debug(s"Not found, send info to mail: $mail.")
         mailer
           .send(
-            subjectNotFound,
-            "But you can look another houses: https://tradegoria.com",
-            mail
+            subject = subjectNotFound,
+            content = "But you can look another houses: https://tradegoria.com",
+            isHtml  = false,
+            to      = mail
           )
       }
     }

@@ -36,6 +36,8 @@ object TradSearchResult {
       }
       .mkString(
         """
+          |<html>
+          |<body>
           |<table>
           |   <tr>
           |       <th>Тип недвижимости</th>
@@ -45,6 +47,6 @@ object TradSearchResult {
           |   </tr>
           |""".stripMargin,
         "",
-        "</table>"
+        "</table></html>"
       )
 }

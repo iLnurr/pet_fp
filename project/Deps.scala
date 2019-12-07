@@ -16,6 +16,7 @@ object Deps {
     val mysqlConnector = "8.0.18"
 
     val mailer = "2.0.0"
+    val pdf    = "1.4.0"
 
     val kafkaStreams = "2.3.0"
     val fs2_kafka    = "0.20.2"
@@ -106,6 +107,10 @@ object Deps {
     "com.github.daddykotex" %% "courier" % Versions.mailer
   )
 
+  private lazy val pdf = Seq(
+    "io.github.cloudify" %% "spdf" % Versions.pdf
+  )
+
   private lazy val kafkaStreams = Seq(
     "org.apache.kafka" % "kafka-streams"        % Versions.kafkaStreams,
     "org.apache.kafka" % "kafka-clients"        % Versions.kafkaStreams,
@@ -131,5 +136,6 @@ object Deps {
     doobie ++ mysql ++
     logging ++
     mailer ++
+    pdf ++
     testDeps
 }
