@@ -2,7 +2,7 @@ version: '2'
 
 services:
   postgres:
-    image: registry.infotech.team/devops/postgis:9.5
+    image: postgres:9.5
     ports:
         - 5432:5432
     environment:
@@ -36,3 +36,26 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_MAX_TIMEOUT_MS: 60000
       KAFKA_TRANSACTIONAL_ID_EXPIRATION_MS: 120000
+
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: 'db'
+      # So you don't have to use root, but you can if you like
+      MYSQL_USER: 'user'
+      # You can use whatever password you like
+      MYSQL_PASSWORD: 'password'
+      # Password for root access
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      # <Port exposed> : < MySQL Port running inside container>
+      - '3306:3306'
+    expose:
+      # Opens port 3306 on the container
+      - '3306'
+      # Where our data will be persisted
+    volumes:
+      - my-db:/var/lib/mysql5
+  # Names our volume
+volumes:
+  my-db:
