@@ -1,4 +1,4 @@
-package model
+package an.model
 
 case class HouseInfo(
   stage:     String,

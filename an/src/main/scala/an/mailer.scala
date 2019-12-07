@@ -1,3 +1,5 @@
+package an
+
 import courier._
 import Defaults._
 import com.typesafe.scalalogging.Logger

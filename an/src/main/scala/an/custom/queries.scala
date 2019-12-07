@@ -1,6 +1,6 @@
-package custom
+package an.custom
 
-import model.{GetInfo, QueryInfo}
+import an.model.{GetInfo, QueryInfo}
 
 object queries {
   def constructQuery(queryInfo: QueryInfo): String =

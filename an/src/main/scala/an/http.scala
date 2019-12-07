@@ -1,3 +1,5 @@
+package an
+
 import java.io.File
 import java.nio.file.{Files, Paths}
 import java.util.concurrent.Executors

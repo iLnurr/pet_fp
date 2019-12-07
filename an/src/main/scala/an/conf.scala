@@ -1,3 +1,5 @@
+package an
+
 import com.typesafe.config.ConfigFactory
 
 object conf {
@@ -8,7 +10,7 @@ object conf {
   lazy val dbPass   = config.getString("db.password")
 
   lazy val httpPort = config.getInt("http.port")
-  lazy val httpHost = config.getInt("http.host")
+  lazy val httpHost = config.getString("http.host")
 
   lazy val gmailAddr = config.getString("mailer.host")
   lazy val gmailPass = config.getString("mailer.password")

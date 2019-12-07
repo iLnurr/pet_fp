@@ -1,12 +1,13 @@
 import cats.effect.IO
 import com.dimafeng.testcontainers.MySQLContainer
-import db.{Data, Headers}
+import an.db.{Data, Headers}
 import doobie.Transactor
 import doobie.implicits._
-import model.GetInfo
+import an.model.GetInfo
 import org.scalatest.{Assertion, BeforeAndAfterAll, FlatSpec, Matchers}
 import doobie.util.fragment.Fragment
-import custom.queries._
+import an.custom.queries._
+import an.db
 
 class DbSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   behavior.of("DOOBIE")

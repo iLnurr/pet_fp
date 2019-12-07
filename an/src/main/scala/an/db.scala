@@ -1,3 +1,5 @@
+package an
+
 import cats.effect.IO
 import doobie._
 import doobie.implicits._

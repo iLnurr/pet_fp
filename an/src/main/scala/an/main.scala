@@ -1,3 +1,5 @@
+package an
+
 import cats.effect.{ConcurrentEffect, ExitCode, IO, IOApp}
 import com.typesafe.scalalogging.Logger
 import cats.syntax.flatMap._

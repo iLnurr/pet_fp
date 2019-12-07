@@ -1,4 +1,6 @@
-package model
+package an.model
+
+import an.conf
 
 trait SelectResult
 
@@ -16,7 +18,12 @@ object TradSearchResult {
     records.flatMap {
       case List(t, p, d, l) =>
         Option(
-          TradSearchResult(t.toString, p.toString, d.toString, l.toString)
+          TradSearchResult(
+            t.toString,
+            p.toString,
+            d.toString,
+            conf.httpHost + l.toString
+          )
         )
       case _ => Option.empty[TradSearchResult]
     }
