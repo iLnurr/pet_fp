@@ -9,10 +9,10 @@ object queries {
        |       t2.pagetitle as pagetitle,
        |       t1.price     as price,
        |       t2.uri       as link
-       |from tradegoria.modx_ms2_products t1
-       |         inner join tradegoria.modx_site_content t2
+       |from modx_ms2_products t1
+       |         inner join modx_site_content t2
        |                    on t1.id = t2.id
-       |where t1.rooms > ${queryInfo.houseInfo.rooms.toInt - 1}
+       |where t1.rooms = ${queryInfo.houseInfo.roomsInt - 1}
        |  AND price > ${queryInfo.houseInfo.priceFrom - 1}
        |  AND price < ${queryInfo.houseInfo.priceTo + 1}
        |  AND t2.parent = ${mergeHouseType(queryInfo)}

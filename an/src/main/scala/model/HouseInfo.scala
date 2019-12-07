@@ -7,11 +7,12 @@ case class HouseInfo(
   price:     String,
   date:      String
 ) {
-  private val currencySymbol = "€"
-  private lazy val prices =
-    price
-      .split(" - ")
-      .map(_.split(currencySymbol).last.toLong) // hardcoded price format in quiz == "€50000 - €100000"
-  def priceFrom: Long = prices(0)
-  def priceTo:   Long = prices(1)
+  def extractNumbers(str: String): List[String] =
+    str.split("\\D+").filter(_.nonEmpty).toList
+
+  private lazy val prices = extractNumbers(price).map(_.toLong)
+
+  def priceFrom: Long = prices.headOption.getOrElse(1L)
+  def priceTo:   Long = prices.tail.headOption.getOrElse(Long.MaxValue)
+  def roomsInt:  Int  = extractNumbers(rooms).headOption.map(_.toInt).getOrElse(1)
 }

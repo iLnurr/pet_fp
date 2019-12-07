@@ -10,10 +10,12 @@ Content-Type: application/json
     "mail": "serbaevilnur@mail.ru"
   },
   "houseInfo": {
-    "stage": "На стадии строительства",
+    "stage": "Вторичное жилье",
     "houseType": "Квартира",
-    "rooms": "4",
-    "price": "€50000 - €100000",
+    "rooms": "4 и более",
+    "price": "€10000 - €100000",
     "date": "next month"
   }
 }
+
+###
