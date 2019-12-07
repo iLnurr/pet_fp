@@ -113,7 +113,9 @@ object http {
   ) = IO.fromFuture(
     IO {
       if (records.nonEmpty) {
-        logger.debug(s"Send records to mail: $mail. \n Records size: $records")
+        logger.debug(
+          s"Send records to mail: $mail. \n Records size: ${records.size}"
+        )
 
         mailer.send(
           subject = subject,

@@ -16,7 +16,7 @@ object TradSearchResult {
 
   private def from(records: List[List[Any]]): List[TradSearchResult] =
     records.flatMap {
-      case List(t, p, d, l) =>
+      case List(t, d, p, l) =>
         Option(
           TradSearchResult(
             t.toString,
