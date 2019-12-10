@@ -128,14 +128,4 @@ object Deps {
 
   lazy val blackProjectDeps
     : Seq[ModuleID] = http4s ++ cats ++ catsEffect ++ catsTagless ++ circe ++ conf ++ doobie ++ fs2_kafka ++ logging ++ testDeps
-
-  lazy val anServiceDeps: Seq[ModuleID] = cats ++ catsEffect ++ catsTagless ++
-    conf ++
-    shapeless ++
-    http4s ++ http4s_circe ++
-    doobie ++ mysql ++
-    logging ++
-    mailer ++
-    pdf ++
-    testDeps
 }

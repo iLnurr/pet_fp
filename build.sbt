@@ -11,7 +11,7 @@ resolvers += "Sonatype Public".at(
 
 lazy val root = project
   .in(file("."))
-  .aggregate(red, green, black, an)
+  .aggregate(red, green, black)
 
 lazy val red = project
   .in(file("red"))
@@ -38,13 +38,4 @@ lazy val black = project
     version := "0.1",
     name    := "fs2WSserver",
     libraryDependencies ++= blackProjectDeps
-  )
-
-lazy val an = project
-  .in(file("an"))
-  .settings(commonSettings())
-  .settings(
-    version := "0.1",
-    name    := "an",
-    libraryDependencies ++= anServiceDeps
   )
