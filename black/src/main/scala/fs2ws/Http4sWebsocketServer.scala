@@ -2,6 +2,7 @@ package fs2ws
 
 import cats.effect._
 import cats.implicits._
+import com.typesafe.scalalogging.Logger
 import fs2._
 import fs2ws.impl.MessageSerDe
 import org.http4s._
@@ -13,6 +14,7 @@ import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame._
 
 object Http4sWebsocketServer {
+  private val logger = Logger(getClass)
   def start[F[_]: ConcurrentEffect: ContextShift: Timer](
     wsPipe: MsgStreamPipe[F]
   ): Stream[F, ExitCode] = new WebSocketServer[F](wsPipe).start
@@ -44,14 +46,18 @@ object Http4sWebsocketServer {
                     case text: Text =>
                       MessageSerDe.decodeMsg(text.str) match {
                         case Some(value) =>
+                          logger.info(s"Received message:$value")
                           Stream.emit(value)
                         case None =>
                           Stream.empty
                       }
-                    case _ => Stream.empty
+                    case other =>
+                      logger.warn(s"Not known message:$other")
+                      Stream.empty
                   }
                   .through(wsPipe)
                   .evalMap { response =>
+                    logger.info(s"Send response:$response")
                     channel
                       .put(List(Text(MessageSerDe.encodeMsg(response))))
                   }

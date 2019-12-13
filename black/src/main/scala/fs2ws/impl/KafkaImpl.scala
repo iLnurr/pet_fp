@@ -9,12 +9,14 @@ import cats.effect.{
   Timer
 }
 import cats.syntax.flatMap._
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import fs2.kafka._
 import fs2ws.conf._
 import org.apache.kafka.clients.admin.NewTopic
 
 object KafkaImpl {
+  private val logger = Logger(getClass)
   private def adminClientSettings[F[_]: Sync](
     bootstrapServers: String
   ): AdminClientSettings[F] =
@@ -44,16 +46,19 @@ object KafkaImpl {
 
   def streamConsume[F[_]: ConcurrentEffect: ContextShift: Timer](
     topic: String
-  ): Stream[F, CommittableConsumerRecord[F, String, String]] =
+  ): Stream[F, CommittableConsumerRecord[F, String, String]] = {
+    logger.info(s"Consume msgs from: $topic")
     consumerStream[F]
       .using(consumerSettings)
       .evalTap(_.subscribeTo(topic))
       .flatMap(_.stream)
+  }
 
   def streamProduce[F[_]: ConcurrentEffect: ContextShift](
     topic:  String,
     record: (String, String)
-  ): Stream[F, ProducerResult[String, String, Unit]] =
+  ): Stream[F, ProducerResult[String, String, Unit]] = {
+    logger.info(s"Produce msg: $record")
     producerStream[F]
       .using(producerSettings)
       .evalMap { producer =>
@@ -61,4 +66,5 @@ object KafkaImpl {
           ProducerRecords.one(ProducerRecord(topic, record._1, record._2))
         producer.produce(rs).flatten
       }
+  }
 }
