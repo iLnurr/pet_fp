@@ -11,6 +11,7 @@ object Deps {
 
     val circe         = "0.11.1"
     val http4sVersion = "0.20.13"
+    val sttp          = "2.0.0-RC5"
 
     val doobieVersion  = "0.8.6"
     val mysqlConnector = "8.0.18"
@@ -22,7 +23,7 @@ object Deps {
     val fs2_kafka    = "0.20.2"
 
     val scalaTest             = "3.0.8"
-    val testcontainers        = "0.33.0"
+    val testcontainers        = "0.34.1"
     val kafkaTestContainer    = "1.12.3"
     val postgresTestcontainer = "1.12.3"
     val mysqlTestcontainer    = "1.12.3"
@@ -35,12 +36,14 @@ object Deps {
   )
 
   private lazy val testDeps = Seq(
-    "org.scalatest"      %% "scalatest"               % Versions.scalaTest,
-    "com.dimafeng"       %% "testcontainers-scala"    % Versions.testcontainers,
-    "org.testcontainers" % "postgresql"               % Versions.postgresTestcontainer,
-    "org.testcontainers" % "kafka"                    % Versions.kafkaTestContainer,
-    "org.testcontainers" % "mysql"                    % Versions.mysqlTestcontainer,
-    "org.apache.kafka"   % "kafka-streams-test-utils" % Versions.kafkaStreams
+    "org.scalatest"                %% "scalatest"                      % Versions.scalaTest,
+    "com.dimafeng"                 %% "testcontainers-scala"           % Versions.testcontainers,
+    "com.dimafeng"                 %% "testcontainers-scala-scalatest" % Versions.testcontainers,
+    "org.testcontainers"           % "postgresql"                      % Versions.postgresTestcontainer,
+    "org.testcontainers"           % "kafka"                           % Versions.kafkaTestContainer,
+    "org.testcontainers"           % "mysql"                           % Versions.mysqlTestcontainer,
+    "org.apache.kafka"             % "kafka-streams-test-utils"        % Versions.kafkaStreams,
+    "com.softwaremill.sttp.client" %% "async-http-client-backend-fs2"  % Versions.sttp // test with websocket client
   ).map(_ % Test)
 
   private lazy val cats = Seq(

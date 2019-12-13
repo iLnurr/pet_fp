@@ -21,7 +21,8 @@ object State {
   ) extends ClientAlgebra[F] {
     private val consumer = new MessageReaderImpl[F]
 
-    def msgs: Stream[F, Message] = consumer.consume()
+    def msgs: Stream[F, Message] =
+      if (subscribed) consumer.consume() else Stream.empty
 
     def privileged: Boolean =
       usertype.contains(UserType.ADMIN)

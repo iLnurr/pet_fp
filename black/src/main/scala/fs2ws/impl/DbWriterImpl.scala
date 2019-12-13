@@ -4,7 +4,7 @@ import cats.effect.{Async, ContextShift}
 import cats.syntax.functor._
 import doobie.util.fragment.Fragment
 import fs2ws.DbWriterAlgebra
-import fs2ws.Domain.{DBEntity, Table}
+import fs2ws.Domain.{DBEntity, Table, User}
 import doobie.implicits._
 import doobie.util.transactor.Transactor.Aux
 
@@ -22,6 +22,19 @@ abstract class DbWriterImpl[F[_]: Async: ContextShift, T <: DBEntity](
     db.upsert(updateSql(ent)).map(_.map(_ => ()))
   override def remove(id: Long): F[Either[Throwable, Unit]] =
     db.upsert(removeSql(id)).map(_.map(_ => ()))
+}
+
+class UserWriterImpl[F[_]: Async: ContextShift](
+  db: DbImpl[F]
+) extends DbWriterImpl[F, User](db) {
+  override def addSql(after_id: Long, ent: User): Fragment =
+    sql"insert into users(id,name,password,user_type) values (${after_id + 1},${ent.name},${ent.password},${ent.user_type})"
+
+  override def updateSql(ent: User): Fragment =
+    sql"update users set name = ${ent.name} AND password = ${ent.password} AND user_type = ${ent.user_type} where id = ${ent.id}"
+
+  override def removeSql(id: Long): Fragment =
+    sql"delete from users where id=$id"
 }
 
 class TableWriterImpl[F[_]: Async: ContextShift](
