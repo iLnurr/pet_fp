@@ -8,6 +8,8 @@ import fs2.{Pipe, Stream}
 import fs2ws.websocket.Helper._
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import sttp.model.ws.WebSocketFrame
+import Domain._
+import fs2ws.impl.MessageSerDe._
 
 import scala.concurrent.ExecutionContext
 
@@ -35,8 +37,8 @@ class SystemSpec
     val receivePipe: Pipe[IO, String, Unit] =
       _.evalMap(m => IO(logger.info(s"Received $m")))
     val sendStream: Stream[IO, Either[WebSocketFrame.Close, String]] = Stream(
-      "Message 1".asRight,
-      "Message 2".asRight,
+      encodeMsg(login("admin", "admin")).asRight,
+      encodeMsg(subscribe_tables()).asRight,
       WebSocketFrame.close.asLeft
     )
 
