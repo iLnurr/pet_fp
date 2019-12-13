@@ -58,7 +58,7 @@ object KafkaImpl {
     topic:  String,
     record: (String, String)
   ): Stream[F, ProducerResult[String, String, Unit]] = {
-    logger.info(s"Produce msg: $record")
+    logger.info(s"Produce record: $record")
     producerStream[F]
       .using(producerSettings)
       .evalMap { producer =>

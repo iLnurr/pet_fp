@@ -47,7 +47,9 @@ class ServerImpl(
               val inputStream = input.evalMap { request =>
                 for {
                   clientState <- clients.get(client.id).map(_.getOrElse(client))
-                  response    <- handler(request, clientState)
+                  _ = logger.info(s"Got request: $request")
+                  response <- handler(request, clientState)
+                  _ = logger.info(s"Response $response")
                   _ = updateStateAsync(clients, clientState, request, response)
                 } yield response
               }

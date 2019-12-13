@@ -62,13 +62,18 @@ object State {
       }
     }
 
-    def broadcast(message: Message): F[Unit] =
+    def broadcast(message: Message): F[Unit] = {
+      logger.info(s"ConnectedClients: broadcast $message")
       producer.send(message).compile.drain
+    }
 
-    def get(id: UUID): F[Option[ClientAlgebra[F]]] =
+    def get(id: UUID): F[Option[ClientAlgebra[F]]] = {
+      logger.info(s"ConnectedClients: get $id")
       ref.get.map(_.get(id))
+    }
 
-    def update(toUpdate: ClientAlgebra[F]): F[Unit] =
+    def update(toUpdate: ClientAlgebra[F]): F[Unit] = {
+      logger.info(s"ConnectedClients: update $toUpdate")
       ref
         .modify { old =>
           val updatedClient = old.get(toUpdate.id).map(_ => toUpdate)
@@ -78,6 +83,7 @@ object State {
           (updatedClients, toUpdate)
         }
         .map(_ => ())
+    }
   }
 
   object ConnectedClients {

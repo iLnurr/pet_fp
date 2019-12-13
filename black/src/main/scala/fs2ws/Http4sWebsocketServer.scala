@@ -44,16 +44,18 @@ object Http4sWebsocketServer {
                 stream
                   .flatMap {
                     case text: Text =>
+                      logger.info(s"Received frame:$text")
                       MessageSerDe.decodeMsg(text.str) match {
                         case Some(value) =>
-                          logger.info(s"Received message:$value")
+                          logger.info(s"Emit message:$value")
                           Stream.emit(value)
                         case None =>
-                          Stream.empty
+                          logger.warn(s"Can't decode $text")
+                          Stream.emit(Domain.empty)
                       }
                     case other =>
-                      logger.warn(s"Not known message:$other")
-                      Stream.empty
+                      logger.warn(s"Not known frame:$other")
+                      Stream.emit(Domain.empty)
                   }
                   .through(wsPipe)
                   .evalMap { response =>
