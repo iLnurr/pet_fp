@@ -11,7 +11,6 @@ import sttp.client.asynchttpclient.fs2.{
   Fs2WebSockets
 }
 import fs2.{Pipe, Stream}
-import fs2ws.Domain
 import fs2ws.Domain.{ping, pong, Message}
 import sttp.client.ws._
 import sttp.model.ws.WebSocketFrame
@@ -19,30 +18,34 @@ import sttp.model.ws.WebSocketFrame
 import scala.util.Random
 
 object Helper extends StrictLogging {
-  def testWebsockets(msgsToSend: List[Message], expected: List[Message])(
-    implicit ce:                 ConcurrentEffect[IO],
-    cs:                          ContextShift[IO],
-    t:                           Timer[IO]
+  def testWebsockets(
+    msgsToSend:         List[Message],
+    expected:           List[Message],
+    additionalChecking: Message => Unit = _ => ()
+  )(
+    implicit ce: ConcurrentEffect[IO],
+    cs:          ContextShift[IO],
+    t:           Timer[IO]
   ): IO[Unit] = {
-    val ranodmL          = Random.nextLong()
-    val expectedWithPong = pong(ranodmL) :: expected
+    val randomL          = Random.nextLong()
+    val expectedWithPong = pong(randomL) :: expected
     val receivePipe: Pipe[IO, String, Unit] =
       _.evalMap(
         m =>
           IO {
             logger.info(s"Try to check $m")
-            decodeMsg(m).foreach(
-              mm =>
-                assert(
-                  expectedWithPong.contains(mm),
-                  s"Expected \n $expectedWithPong \nshould contain $m"
-                )
-            )
+            decodeMsg(m).foreach { mm =>
+              assert(
+                expectedWithPong.contains(mm),
+                s"Expected \n $expectedWithPong \nshould contain $m"
+              )
+              additionalChecking(mm)
+            }
           }
       )
     val toSend =
       Stream.emits(
-        (msgsToSend ++ List(ping(ranodmL)))
+        (msgsToSend ++ List(ping(randomL)))
           .map(encodeMsg(_).asRight[WebSocketFrame.Close])
       )
     val sendStream

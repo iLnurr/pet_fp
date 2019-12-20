@@ -106,8 +106,32 @@ class SystemSpec
       )
     ).unsafeRunSync()
   }
-  it should "properly update table" in {}
-  it should "properly remove table" in {}
+  it should "properly update table" in {
+    val t       = Table(name = "test3", participants = 0)
+    val updated = t.copy(id  = 3L.some, name         = "updated")
+    testWebsockets(
+      msgsToSend =
+        List(login("admin", "admin"), add_table(-1, t), update_table(updated)),
+      expected = List(
+        login_successful("admin"),
+        table_added(-1, t.copy(id = 3L.some)),
+        table_updated(updated)
+      )
+    ).unsafeRunSync()
+  }
+  it should "properly remove table" in {
+    val id = 4L
+    val t  = Table(name = "test4", participants = 0)
+    testWebsockets(
+      msgsToSend =
+        List(login("admin", "admin"), add_table(-1, t), remove_table(id)),
+      expected = List(
+        login_successful("admin"),
+        table_added(-1, t.copy(id = id.some)),
+        table_removed(id)
+      )
+    ).unsafeRunSync()
+  }
 
   override protected def beforeAll(): Unit = {
     container.start()
