@@ -54,7 +54,7 @@ class ServerImpl(
                 } yield response
               }
 
-              inputStream.merge(client.msgs)
+              inputStream.merge(client.msgs) // TODO fix that msgs always empty
             }
         }
 
