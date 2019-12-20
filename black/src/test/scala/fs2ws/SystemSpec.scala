@@ -94,11 +94,16 @@ class SystemSpec
     ).unsafeRunSync()
   }
   it should "properly add table" in {
-    val t = Table(name = "test", participants = 0)
+    val t  = Table(name = "test", participants  = 0)
+    val t2 = Table(name = "test2", participants = 0)
     testWebsockets(
-      msgsToSend = List(login("admin", "admin"), add_table(-1, t)),
-      expected =
-        List(login_successful("admin"), table_added(-1, t.copy(id = 1L.some)))
+      msgsToSend =
+        List(login("admin", "admin"), add_table(-1, t), add_table(0, t2)),
+      expected = List(
+        login_successful("admin"),
+        table_added(-1, t.copy(id = 1L.some)),
+        table_added(0, t2.copy(id = 2L.some))
+      )
     ).unsafeRunSync()
   }
   it should "properly update table" in {}
