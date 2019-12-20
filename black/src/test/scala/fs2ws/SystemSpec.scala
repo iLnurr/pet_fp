@@ -44,12 +44,61 @@ class SystemSpec
 
     effect(send = sendStream, receivePipe = receivePipe).unsafeRunSync()
 
+    testWebsockets(
+      msgsToSend = List(login("admin", "admin"), subscribe_tables()),
+      expected   = List(login_successful(UserType.ADMIN), table_list(Seq()))
+    ).unsafeRunSync()
+
+    testWebsockets(
+      msgsToSend = List(login("admin", "admin"), subscribe_tables()),
+      expected   = List() // it must not be empty
+    ).handleErrorWith(
+        throwable =>
+          if (throwable.isInstanceOf[AssertionError]) {
+            IO.unit
+          } else {
+            throw throwable
+          }
+      )
+      .unsafeRunSync()
   }
-  it should "properly register clients" in {}
-  it should "properly authenticate clients" in {}
-  it should "subscribe client" in {}
-  it should "unsubscribe client" in {}
-  it should "properly add table" in {}
+  it should "properly register clients" in {
+    testWebsockets(
+      msgsToSend = List(login("admin", "admin"), ping(2)),
+      expected   = List(login_successful(UserType.ADMIN), pong(2))
+    ).unsafeRunSync()
+  }
+  it should "properly authenticate clients" in {
+    (for {
+      _ <- testWebsockets(
+        msgsToSend = List(login("admin", "admin")),
+        expected   = List(login_successful("admin"))
+      )
+      _ <- testWebsockets(
+        msgsToSend = List(login("un", "upwd")),
+        expected   = List(login_successful(UserType.USER))
+      )
+      _ <- testWebsockets(
+        msgsToSend = List(login("unknown", "unknown")),
+        expected   = List(login_failed())
+      )
+    } yield ()).unsafeRunSync()
+  }
+  it should "subscribe/unsubscribe client" in {
+    testWebsockets(
+      msgsToSend =
+        List(login("admin", "admin"), subscribe_tables(), unsubscribe_tables()),
+      expected =
+        List(login_successful(UserType.ADMIN), table_list(Seq()), Domain.empty)
+    ).unsafeRunSync()
+  }
+  it should "properly add table" in {
+    val t = Table(name = "test", participants = 0)
+    testWebsockets(
+      msgsToSend = List(login("admin", "admin"), add_table(-1, t)),
+      expected   = List(login_successful("admin"), table_added(3, t))
+    ).unsafeRunSync()
+  }
   it should "properly update table" in {}
   it should "properly remove table" in {}
 

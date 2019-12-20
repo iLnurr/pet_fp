@@ -1,6 +1,9 @@
 package fs2ws.websocket
 
 import cats.effect.{ConcurrentEffect, ContextShift, IO, Timer}
+import cats.syntax.either._
+import com.typesafe.scalalogging.StrictLogging
+import fs2ws.impl.MessageSerDe._
 import sttp.client._
 import sttp.client.asynchttpclient.fs2.{
   AsyncHttpClientFs2Backend,
@@ -8,10 +11,38 @@ import sttp.client.asynchttpclient.fs2.{
   Fs2WebSockets
 }
 import fs2.{Pipe, Stream}
+import fs2ws.Domain.Message
 import sttp.client.ws._
 import sttp.model.ws.WebSocketFrame
 
-object Helper {
+object Helper extends StrictLogging {
+  def testWebsockets(msgsToSend: List[Message], expected: List[Message])(
+    implicit ce:                 ConcurrentEffect[IO],
+    cs:                          ContextShift[IO],
+    t:                           Timer[IO]
+  ): IO[Unit] = {
+    val receivePipe: Pipe[IO, String, Unit] =
+      _.evalMap(
+        m =>
+          IO {
+            logger.info(s"Try to check $m")
+            decodeMsg(m).foreach(
+              mm =>
+                assert(
+                  expected.contains(mm),
+                  s"Expected \n $expected \nshould contain $m"
+                )
+            )
+          }
+      )
+    val toSend =
+      Stream.emits(msgsToSend.map(encodeMsg(_).asRight[WebSocketFrame.Close]))
+    val sendStream
+      : Stream[IO, Either[WebSocketFrame.Close, String]] = toSend ++ Stream(
+        WebSocketFrame.close.asLeft
+      )
+    effect(send = sendStream, receivePipe = receivePipe)
+  }
   def effect(
     uri:         String = "ws://localhost:9000/ws_api",
     send:        Stream[IO, Either[WebSocketFrame.Close, String]],
