@@ -2,6 +2,7 @@ package fs2ws
 
 import cats.effect.{ConcurrentEffect, ContextShift, IO, Timer}
 import cats.syntax.either._
+import cats.syntax.option._
 import com.dimafeng.testcontainers._
 import com.typesafe.scalalogging.StrictLogging
 import fs2.{Pipe, Stream}
@@ -96,7 +97,8 @@ class SystemSpec
     val t = Table(name = "test", participants = 0)
     testWebsockets(
       msgsToSend = List(login("admin", "admin"), add_table(-1, t)),
-      expected   = List(login_successful("admin"), table_added(3, t))
+      expected =
+        List(login_successful("admin"), table_added(-1, t.copy(id = 1L.some)))
     ).unsafeRunSync()
   }
   it should "properly update table" in {}

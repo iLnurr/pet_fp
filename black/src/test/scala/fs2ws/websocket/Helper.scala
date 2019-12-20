@@ -11,9 +11,12 @@ import sttp.client.asynchttpclient.fs2.{
   Fs2WebSockets
 }
 import fs2.{Pipe, Stream}
-import fs2ws.Domain.Message
+import fs2ws.Domain
+import fs2ws.Domain.{ping, pong, Message}
 import sttp.client.ws._
 import sttp.model.ws.WebSocketFrame
+
+import scala.util.Random
 
 object Helper extends StrictLogging {
   def testWebsockets(msgsToSend: List[Message], expected: List[Message])(
@@ -21,6 +24,8 @@ object Helper extends StrictLogging {
     cs:                          ContextShift[IO],
     t:                           Timer[IO]
   ): IO[Unit] = {
+    val ranodmL          = Random.nextLong()
+    val expectedWithPong = pong(ranodmL) :: expected
     val receivePipe: Pipe[IO, String, Unit] =
       _.evalMap(
         m =>
@@ -29,14 +34,17 @@ object Helper extends StrictLogging {
             decodeMsg(m).foreach(
               mm =>
                 assert(
-                  expected.contains(mm),
-                  s"Expected \n $expected \nshould contain $m"
+                  expectedWithPong.contains(mm),
+                  s"Expected \n $expectedWithPong \nshould contain $m"
                 )
             )
           }
       )
     val toSend =
-      Stream.emits(msgsToSend.map(encodeMsg(_).asRight[WebSocketFrame.Close]))
+      Stream.emits(
+        (msgsToSend ++ List(ping(ranodmL)))
+          .map(encodeMsg(_).asRight[WebSocketFrame.Close])
+      )
     val sendStream
       : Stream[IO, Either[WebSocketFrame.Close, String]] = toSend ++ Stream(
         WebSocketFrame.close.asLeft
