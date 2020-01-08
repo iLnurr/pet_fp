@@ -18,22 +18,21 @@ trait JsonDecoder[F[_], A] {
 
 @finalAlg
 trait ClientAlgebra[F[_]] {
-  def id:         UUID
-  def username:   Option[String]
-  def usertype:   Option[String]
+  def id: UUID
+  def add(message: Message): Unit
+  def take():     Seq[Message]
   def subscribed: Boolean
-  def msgs:       Stream[F, Message]
   def privileged: Boolean
   def updateState(message: Message): ClientAlgebra[F]
 }
 
 @finalAlg
 trait Clients[F[_]] {
-  def get(id:            UUID):             F[Option[ClientAlgebra[F]]]
-  def register(c:        ClientAlgebra[F]): F[ClientAlgebra[F]]
-  def unregister(c:      ClientAlgebra[F]): F[Unit]
-  def broadcast(message: Message):          F[Unit]
-  def update(toUpdate:   ClientAlgebra[F]): F[Unit]
+  def get(id:          UUID):             F[Option[ClientAlgebra[F]]]
+  def register(c:      ClientAlgebra[F]): F[ClientAlgebra[F]]
+  def unregister(c:    ClientAlgebra[F]): F[Unit]
+  def update(toUpdate: ClientAlgebra[F]): F[Unit]
+  def subscribed(): F[Seq[ClientAlgebra[F]]]
 }
 
 @finalAlg

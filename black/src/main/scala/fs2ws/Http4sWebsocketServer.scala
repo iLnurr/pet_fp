@@ -51,11 +51,11 @@ object Http4sWebsocketServer {
                           Stream.emit(value)
                         case None =>
                           logger.warn(s"Can't decode $text")
-                          Stream.emit(Domain.empty)
+                          Stream.empty
                       }
                     case other =>
                       logger.warn(s"Not known frame:$other")
-                      Stream.emit(Domain.empty)
+                      Stream.empty
                   }
                   .through(wsPipe)
                   .evalMap { response =>

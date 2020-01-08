@@ -1,54 +1,75 @@
 package fs2ws.impl
 
 import java.util.UUID
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import cats.Monad
 import cats.effect.concurrent.Ref
 import cats.effect.{ConcurrentEffect, ContextShift, Sync, Timer}
 import com.typesafe.scalalogging.Logger
-import fs2.Stream
 import fs2ws.Domain._
 import fs2ws.{ClientAlgebra, Clients}
+
+import scala.collection.mutable.ListBuffer
 
 object State {
   private lazy val logger = Logger("clients")
 
   case class Client[F[_]: Monad: ConcurrentEffect: ContextShift: Timer](
-    id:         UUID           = UUID.randomUUID(),
-    username:   Option[String] = None,
-    usertype:   Option[String] = None,
-    subscribed: Boolean        = false
+    id: UUID = UUID.randomUUID()
   ) extends ClientAlgebra[F] {
-    private val consumer = new MessageReaderImpl[F]
+    private val subscribedRef = new AtomicBoolean(false)
+    private val usernameRef   = new AtomicReference[Option[String]](None)
+    private val usertypeRef   = new AtomicReference[Option[String]](None)
+    private val msgQueue      = ListBuffer[Message]()
 
-    def msgs: Stream[F, Message] =
-      if (subscribed) consumer.consume() else Stream.empty
+    def add(message: Message): Unit = {
+      logger.info(s"Add $message")
+      msgQueue.append(message)
+    }
+    def take(): Seq[Message] = {
+      val result = msgQueue.toList
+      msgQueue.clear()
+      if (result.nonEmpty) logger.info(s"Take ${result.mkString("\n")}")
+      result
+    }
 
+    def subscribed: Boolean =
+      subscribedRef.get()
     def privileged: Boolean =
-      usertype.contains(UserType.ADMIN)
-
+      usertypeRef.get().contains(UserType.ADMIN)
     def updateState(message: Message): Client[F] =
       message match {
         case _: subscribe_tables =>
-          copy(subscribed = true)
+          subscribedRef.set(true)
+          this
         case _: unsubscribe_tables =>
-          copy(subscribed = false)
+          subscribedRef.set(false)
+          this
         case login(un, _) =>
-          copy(username = Some(un))
+          usernameRef.set(Some(un))
+          this
         case login_successful(user_type) =>
-          copy(usertype = Some(user_type))
+          usertypeRef.set(Some(user_type))
+          this
         case _: login_failed =>
-          Client(id) // clear username, userType, subscribed info
+          subscribedRef.set(false)
+          usertypeRef.set(None)
+          usernameRef.set(None)
+          this // clear username, userType, subscribed info
         case _ =>
           this
       }
+
+    override def toString: String =
+      s"Client(id=${id},username=${usernameRef.get()},usertype=${usertypeRef
+        .get()},subscribed=${subscribedRef.get()})"
   }
 
   import cats.syntax.functor._
   case class ConnectedClients[F[_]: Sync: ConcurrentEffect: ContextShift: Timer](
-    val ref: Ref[F, Map[UUID, ClientAlgebra[F]]]
+    ref: Ref[F, Map[UUID, ClientAlgebra[F]]]
   ) extends Clients[F] {
-    private val producer = new MessageWriterImpl[F]
     def register(state: ClientAlgebra[F]): F[ClientAlgebra[F]] = {
       logger.info(s"ConnectedClients: Register $state")
       ref.modify { oldClients =>
@@ -56,16 +77,14 @@ object State {
       }
     }
 
+    def subscribed(): F[Seq[ClientAlgebra[F]]] =
+      ref.get.map(_.values.filter(_.subscribed).toSeq)
+
     def unregister(c: ClientAlgebra[F]): F[Unit] = {
       logger.info(s"ConnectedClients: Unregister $c")
       ref.update { old =>
         old - c.id
       }
-    }
-
-    def broadcast(message: Message): F[Unit] = {
-      logger.info(s"ConnectedClients: broadcast $message")
-      producer.send(message).compile.drain
     }
 
     def get(id: UUID): F[Option[ClientAlgebra[F]]] = {

@@ -47,7 +47,7 @@ object KafkaImpl {
   def streamConsume[F[_]: ConcurrentEffect: ContextShift: Timer](
     topic: String
   ): Stream[F, CommittableConsumerRecord[F, String, String]] = {
-    logger.info(s"Consume msgs from: $topic")
+    logger.info(s"Consume from topic: `$topic``")
     consumerStream[F]
       .using(consumerSettings)
       .evalTap(_.subscribeTo(topic))

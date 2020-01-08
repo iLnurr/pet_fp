@@ -6,6 +6,7 @@ import fs2.Stream
 import fs2ws.Domain._
 import fs2ws._
 import fs2ws.impl.State._
+import scala.concurrent.duration._
 
 class ServerImpl(
   val clients:  Clients[IO],
@@ -17,6 +18,11 @@ class ServerImpl(
   contextShift: ContextShift[IO]
 ) extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
   private val logger = Logger("ServerImpl")
+
+  private val kafkaProducer = new MessageWriterImpl[IO]
+  def kafkaConsumer(): Stream[IO, Message] =
+    new MessageReaderImpl[IO].consume()
+
   override def handler: (Message, ClientAlgebra[IO]) => IO[Message] =
     (req, clientState) =>
       if (req.isInstanceOf[Command] && !clientState.privileged) {
@@ -32,31 +38,44 @@ class ServerImpl(
       }
 
   override def start(): IO[Unit] =
-    core {
-      pipe
-    }.compile.drain
+    core(pipe)
+      .merge(processMsgFromKafka())
+      .compile
+      .drain
 
   override def pipe: MsgStreamPipe[IO] =
     input =>
       Stream
-        .eval(IO.pure(clients))
-        .flatMap { clients =>
-          Stream
-            .bracket(clients.register(Client()))(c => clients.unregister(c))
-            .flatMap { client =>
-              val inputStream = input.evalMap { request =>
-                for {
-                  clientState <- clients.get(client.id).map(_.getOrElse(client))
-                  _ = logger.info(s"Got request: $request")
-                  response <- handler(request, clientState)
-                  _ = logger.info(s"Response $response")
-                  _ = updateStateAsync(clients, clientState, request, response)
-                } yield response
-              }
+        .bracket(clients.register(Client()))(c => clients.unregister(c))
+        .flatMap { client =>
+          val bufferStream = Stream
+            .awakeEvery[IO](5.seconds)
+            .flatMap(_ => Stream.emits(client.take()))
 
-              inputStream.merge(client.msgs) // TODO fix that msgs always empty
-            }
+          bufferStream.merge(processMsgFromWS(input, client))
         }
+
+  private def processMsgFromWS(
+    input:  Stream[IO, Message],
+    client: ClientAlgebra[IO]
+  ): Stream[IO, Message] =
+    input.evalMap { request =>
+      for {
+        clientState <- clients.get(client.id).map(_.getOrElse(client))
+        _ = logger.info(s"Got request: $request")
+        response <- handler(request, clientState)
+        _ = logger.info(s"Response $response")
+        _ = updateStateAsync(clients, clientState, request, response)
+      } yield response
+    }
+
+  def processMsgFromKafka(): Stream[IO, Unit] =
+    kafkaConsumer().evalMap(
+      msg =>
+        clients
+          .subscribed()
+          .map(_.foreach(_.add(msg)))
+    )
 
   private def updateStateAsync(
     clients:     Clients[IO],
@@ -76,8 +95,9 @@ class ServerImpl(
     response match {
       case _: table_added | _: table_updated | _: table_removed =>
         services.tableList
-          .flatMap { tableList =>
-            clients.broadcast(tableList)
+          .flatMap { message =>
+            logger.info(s"ConnectedClients: broadcast $message")
+            kafkaProducer.send(message).compile.drain
           }
       case response =>
         clients
