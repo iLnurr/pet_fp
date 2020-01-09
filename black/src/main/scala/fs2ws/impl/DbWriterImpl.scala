@@ -3,14 +3,14 @@ package fs2ws.impl
 import cats.effect.{Async, ContextShift}
 import cats.syntax.functor._
 import doobie.util.fragment.Fragment
-import fs2ws.DbWriterAlgebra
+import fs2ws.DbWriter
 import fs2ws.Domain.{DBEntity, Table, User}
 import doobie.implicits._
 import doobie.util.transactor.Transactor.Aux
 
 abstract class DbWriterImpl[F[_]: Async: ContextShift, T <: DBEntity](
   db: DbImpl[F]
-) extends DbWriterAlgebra[F, T] {
+) extends DbWriter[F, T] {
   def addSql(after_id: Long, ent: T): Fragment
   def updateSql(ent:   T): Fragment
   def removeSql(id:    Long): Fragment

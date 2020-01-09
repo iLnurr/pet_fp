@@ -4,10 +4,10 @@ import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import com.typesafe.scalalogging.StrictLogging
 import fs2.Stream
 import fs2ws.Domain.Message
-import fs2ws.{conf, MessageReaderAlgebra}
+import fs2ws.{conf, MessageReader}
 
 class MessageReaderImpl[F[_]: ConcurrentEffect: ContextShift: Timer]
-    extends MessageReaderAlgebra[F, Message]
+    extends MessageReader[F, Message]
     with StrictLogging {
   override def consume(): Stream[F, Message] =
     KafkaImpl

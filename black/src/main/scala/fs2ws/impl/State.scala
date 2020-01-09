@@ -8,7 +8,7 @@ import cats.effect.concurrent.Ref
 import cats.effect.{ConcurrentEffect, ContextShift, Sync, Timer}
 import com.typesafe.scalalogging.Logger
 import fs2ws.Domain._
-import fs2ws.{ClientAlgebra, Clients}
+import fs2ws.{Clients, WSClient}
 
 import scala.collection.mutable.ListBuffer
 
@@ -17,7 +17,7 @@ object State {
 
   case class Client[F[_]: Monad: ConcurrentEffect: ContextShift: Timer](
     id: UUID = UUID.randomUUID()
-  ) extends ClientAlgebra[F] {
+  ) extends WSClient[F] {
     private val subscribedRef = new AtomicBoolean(false)
     private val usernameRef   = new AtomicReference[Option[String]](None)
     private val usertypeRef   = new AtomicReference[Option[String]](None)
@@ -38,7 +38,7 @@ object State {
       subscribedRef.get()
     def privileged: Boolean =
       usertypeRef.get().contains(UserType.ADMIN)
-    def updateState(message: Message): Client[F] =
+    def updateState(message: Message): WSClient[F] =
       message match {
         case _: subscribe_tables =>
           subscribedRef.set(true)
@@ -68,31 +68,31 @@ object State {
 
   import cats.syntax.functor._
   case class ConnectedClients[F[_]: Sync: ConcurrentEffect: ContextShift: Timer](
-    ref: Ref[F, Map[UUID, ClientAlgebra[F]]]
+    ref: Ref[F, Map[UUID, WSClient[F]]]
   ) extends Clients[F] {
-    def register(state: ClientAlgebra[F]): F[ClientAlgebra[F]] = {
+    def register(state: WSClient[F]): F[WSClient[F]] = {
       logger.info(s"ConnectedClients: Register $state")
       ref.modify { oldClients =>
         (oldClients + (state.id -> state), state)
       }
     }
 
-    def subscribed(): F[Seq[ClientAlgebra[F]]] =
+    def subscribed(): F[Seq[WSClient[F]]] =
       ref.get.map(_.values.filter(_.subscribed).toSeq)
 
-    def unregister(c: ClientAlgebra[F]): F[Unit] = {
+    def unregister(c: WSClient[F]): F[Unit] = {
       logger.info(s"ConnectedClients: Unregister $c")
       ref.update { old =>
         old - c.id
       }
     }
 
-    def get(id: UUID): F[Option[ClientAlgebra[F]]] = {
+    def get(id: UUID): F[Option[WSClient[F]]] = {
       logger.info(s"ConnectedClients: get $id")
       ref.get.map(_.get(id))
     }
 
-    def update(toUpdate: ClientAlgebra[F]): F[Unit] = {
+    def update(toUpdate: WSClient[F]): F[Unit] = {
       logger.info(s"ConnectedClients: update $toUpdate")
       ref
         .modify { old =>
@@ -110,7 +110,7 @@ object State {
     def create[F[_]: Sync: ConcurrentEffect: ContextShift: Timer]
       : F[ConnectedClients[F]] =
       Ref[F]
-        .of(Map.empty[UUID, ClientAlgebra[F]])
+        .of(Map.empty[UUID, WSClient[F]])
         .map(ref => new ConnectedClients[F](ref))
   }
 

@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import cats.effect.{IO, Sync}
 import cats.syntax.flatMap._
-import fs2ws.{DbReaderAlgebra, DbWriterAlgebra}
+import fs2ws.{DbReader, DbWriter}
 import fs2ws.Domain._
 
 import scala.collection.mutable.ArrayBuffer
@@ -12,8 +12,8 @@ import scala.util.Try
 
 object InMemoryDB {
   abstract class DbInMemory[F[_]: Sync, T <: DBEntity](buffer: ArrayBuffer[T])
-      extends DbReaderAlgebra[F, T]
-      with DbWriterAlgebra[F, T] {
+      extends DbReader[F, T]
+      with DbWriter[F, T] {
     private val counter = new AtomicLong(0L)
     def setIdIfEmpty: Long => T => T
     def getById(id: Long): F[Option[T]] =

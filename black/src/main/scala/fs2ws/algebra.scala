@@ -17,53 +17,53 @@ trait JsonDecoder[F[_], A] {
 }
 
 @finalAlg
-trait ClientAlgebra[F[_]] {
+trait WSClient[F[_]] {
   def id: UUID
   def add(message: Message): Unit
   def take():     Seq[Message]
   def subscribed: Boolean
   def privileged: Boolean
-  def updateState(message: Message): ClientAlgebra[F]
+  def updateState(message: Message): WSClient[F]
 }
 
 @finalAlg
 trait Clients[F[_]] {
-  def get(id:          UUID):             F[Option[ClientAlgebra[F]]]
-  def register(c:      ClientAlgebra[F]): F[ClientAlgebra[F]]
-  def unregister(c:    ClientAlgebra[F]): F[Unit]
-  def update(toUpdate: ClientAlgebra[F]): F[Unit]
-  def subscribed(): F[Seq[ClientAlgebra[F]]]
+  def get(id:          UUID):        F[Option[WSClient[F]]]
+  def register(c:      WSClient[F]): F[WSClient[F]]
+  def unregister(c:    WSClient[F]): F[Unit]
+  def update(toUpdate: WSClient[F]): F[Unit]
+  def subscribed(): F[Seq[WSClient[F]]]
 }
 
 @finalAlg
-trait ServerAlgebra[F[_], I, O, StreamPipe[_[_]]] {
-  def handler: (I, ClientAlgebra[F]) => F[O]
+trait Server[F[_], I, O, StreamPipe[_[_]]] {
+  def handler: (I, WSClient[F]) => F[O]
   def clients: Clients[F]
   def start(): F[Unit]
   def pipe:    StreamPipe[F]
 }
 
 @finalAlg
-trait DbReaderAlgebra[F[_], T <: DBEntity] {
+trait DbReader[F[_], T <: DBEntity] {
   def getById(id:  Long):   F[Option[T]]
   def getByName(n: String): F[Option[T]]
   def list: F[Seq[T]]
 }
 
 @finalAlg
-trait DbWriterAlgebra[F[_], T <: DBEntity] {
+trait DbWriter[F[_], T <: DBEntity] {
   def add(after_id: Long, ent: T): F[Either[Throwable, T]]
   def update(ent:   T): F[Either[Throwable, Unit]]
   def remove(id:    Long): F[Either[Throwable, Unit]]
 }
 
 @finalAlg
-trait MessageReaderAlgebra[F[_], A] {
+trait MessageReader[F[_], A] {
   def consume(): Stream[F, A]
 }
 
 @finalAlg
-trait MessageWriterAlgebra[F[_], A] {
+trait MessageWriter[F[_], A] {
   type Result
   def send(msg: A): Stream[F, Result]
 }

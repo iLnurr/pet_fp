@@ -16,14 +16,14 @@ class ServerImpl(
   implicit ce:  ConcurrentEffect[IO],
   timer:        Timer[IO],
   contextShift: ContextShift[IO]
-) extends ServerAlgebra[IO, Message, Message, MsgStreamPipe] {
+) extends Server[IO, Message, Message, MsgStreamPipe] {
   private val logger = Logger("ServerImpl")
 
   private val kafkaProducer = new MessageWriterImpl[IO]
   def kafkaConsumer(): Stream[IO, Message] =
     new MessageReaderImpl[IO].consume()
 
-  override def handler: (Message, ClientAlgebra[IO]) => IO[Message] =
+  override def handler: (Message, WSClient[IO]) => IO[Message] =
     (req, clientState) =>
       if (req.isInstanceOf[Command] && !clientState.privileged) {
         IO.pure(not_authorized())
@@ -57,7 +57,7 @@ class ServerImpl(
 
   private def processMsgFromWS(
     input:  Stream[IO, Message],
-    client: ClientAlgebra[IO]
+    client: WSClient[IO]
   ): Stream[IO, Message] =
     input.evalMap { request =>
       for {
@@ -79,7 +79,7 @@ class ServerImpl(
 
   private def updateStateAsync(
     clients:     Clients[IO],
-    clientState: ClientAlgebra[IO],
+    clientState: WSClient[IO],
     request:     Message,
     response:    Message
   ): Unit =
@@ -88,7 +88,7 @@ class ServerImpl(
 
   private def updateState(
     clients:     Clients[IO],
-    clientState: ClientAlgebra[IO],
+    clientState: WSClient[IO],
     request:     Message,
     response:    Message
   ): IO[Unit] =

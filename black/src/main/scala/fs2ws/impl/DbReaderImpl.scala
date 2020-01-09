@@ -3,14 +3,14 @@ package fs2ws.impl
 import cats.effect.{Async, ContextShift}
 import cats.syntax.functor._
 import doobie.util.query.Query0
-import fs2ws.DbReaderAlgebra
+import fs2ws.DbReader
 import fs2ws.Domain.{DBEntity, Table, User}
 import doobie.implicits._
 import doobie.util.transactor.Transactor.Aux
 
 abstract class DbReaderImpl[F[_]: Async: ContextShift, T <: DBEntity](
   db: DbImpl[F]
-) extends DbReaderAlgebra[F, T] {
+) extends DbReader[F, T] {
   def getByIdQuery(id:  Long):   Query0[T]
   def getByNameQuery(n: String): Query0[T]
   def listQuery: Query0[T]
