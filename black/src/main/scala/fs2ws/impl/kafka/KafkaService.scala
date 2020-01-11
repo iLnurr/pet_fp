@@ -1,4 +1,4 @@
-package fs2ws.impl
+package fs2ws.impl.kafka
 
 import cats.effect.{
   Concurrent,
@@ -8,14 +8,14 @@ import cats.effect.{
   Sync,
   Timer
 }
-import cats.syntax.flatMap._
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import fs2.kafka._
-import fs2ws.conf._
+import fs2ws.Conf
 import org.apache.kafka.clients.admin.NewTopic
+import cats.syntax.flatMap._
 
-object KafkaImpl {
+object KafkaService {
   private val logger = Logger(getClass)
   private def adminClientSettings[F[_]: Sync](
     bootstrapServers: String
@@ -27,24 +27,24 @@ object KafkaImpl {
   ): Resource[F, KafkaAdminClient[F]] =
     adminClientResource(adminClientSettings[F](bootstrapServers))
 
-  def createTopic[F[_]: Concurrent: ContextShift]: F[Unit] =
-    kafkaAdminClientResource[F](kafkaBootstrapServer).use { client =>
-      client.createTopic(new NewTopic(kafkaMessageTopic, 1, 1))
+  def createTopic[F[_]: Concurrent: ContextShift: Conf]: F[Unit] =
+    kafkaAdminClientResource[F](Conf[F].kafkaBootstrapServer).use { client =>
+      client.createTopic(new NewTopic(Conf[F].kafkaMessageTopic, 1, 1))
     }
 
-  private def consumerSettings[F[_]: Sync]
+  private def consumerSettings[F[_]: Sync: Conf]
     : ConsumerSettings[F, String, String] =
     ConsumerSettings[F, String, String]
       .withAutoOffsetReset(AutoOffsetReset.Earliest)
-      .withBootstrapServers(kafkaBootstrapServer)
-      .withGroupId(kafkaGroupId)
+      .withBootstrapServers(Conf[F].kafkaBootstrapServer)
+      .withGroupId(Conf[F].kafkaGroupId)
 
-  private def producerSettings[F[_]: Sync]
+  private def producerSettings[F[_]: Sync: Conf]
     : ProducerSettings[F, String, String] =
     ProducerSettings[F, String, String]
-      .withBootstrapServers(kafkaBootstrapServer)
+      .withBootstrapServers(Conf[F].kafkaBootstrapServer)
 
-  def streamConsume[F[_]: ConcurrentEffect: ContextShift: Timer](
+  def streamConsume[F[_]: ConcurrentEffect: ContextShift: Timer: Conf](
     topic: String
   ): Stream[F, CommittableConsumerRecord[F, String, String]] = {
     logger.info(s"Consume from topic: `$topic``")
@@ -54,7 +54,7 @@ object KafkaImpl {
       .flatMap(_.stream)
   }
 
-  def streamProduce[F[_]: ConcurrentEffect: ContextShift](
+  def streamProduce[F[_]: ConcurrentEffect: ContextShift: Conf](
     topic:  String,
     record: (String, String)
   ): Stream[F, ProducerResult[String, String, Unit]] = {

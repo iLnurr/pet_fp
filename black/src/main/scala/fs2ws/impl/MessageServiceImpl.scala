@@ -1,17 +1,16 @@
-package fs2ws
+package fs2ws.impl
 
 import cats.effect.Sync
-import cats.syntax.functor._
 import cats.syntax.applicative._
 import cats.syntax.either._
+import cats.syntax.functor._
 import fs2ws.Domain._
+import fs2ws.MessageService
+import fs2ws.impl.doobie.{TableReader, TableWriter, UserReader}
 
-class Services[F[_]: Sync](
-  userReader:  UserReader[F],
-  tableReader: TableReader[F],
-  tableWriter: TableWriter[F]
-) {
-  def handleReq: Message => F[Either[String, Message]] = {
+class MessageServiceImpl[F[_]: Sync: UserReader: TableReader: TableWriter]
+    extends MessageService[F] {
+  def process: Message => F[Either[String, Message]] = {
     case command: Command =>
       processCommand(command).map(Right(_))
     case query: Query =>
@@ -21,11 +20,11 @@ class Services[F[_]: Sync](
   }
 
   def tableList: F[Message] =
-    tableReader.list.map(seq => table_list(seq))
+    TableReader[F].list.map(seq => table_list(seq))
 
   private def processQuery: Query => F[Message] = {
     case login(username, password) =>
-      userReader.getByName(username).map {
+      UserReader[F].getByName(username).map {
         case Some(user) if password == user.password =>
           login_successful(user.user_type)
         case _ =>
@@ -41,21 +40,21 @@ class Services[F[_]: Sync](
 
   private def processCommand: Command => F[Message] = {
     case add_table(after_id, table) =>
-      tableWriter.add(after_id, table).map {
+      TableWriter[F].add(after_id, table).map {
         case Left(_) =>
           add_failed(after_id)
         case Right(inserted) =>
           table_added(after_id, inserted)
       }
     case update_table(table) =>
-      tableWriter.update(table).map {
+      TableWriter[F].update(table).map {
         case Left(_) =>
           update_failed(table.id.getOrElse(-1L))
         case Right(_) =>
           table_updated(table)
       }
     case remove_table(id) =>
-      tableWriter.remove(id).map {
+      TableWriter[F].remove(id).map {
         case Left(_) =>
           removal_failed(id)
         case Right(_) =>

@@ -15,9 +15,9 @@ import scala.collection.mutable.ListBuffer
 object State {
   private lazy val logger = Logger("clients")
 
-  case class Client[F[_]: Monad: ConcurrentEffect: ContextShift: Timer](
-    id: UUID = UUID.randomUUID()
-  ) extends WSClient[F] {
+  case class Client[F[_]: Monad: ConcurrentEffect: ContextShift: Timer]()
+      extends WSClient[F] {
+    val id: UUID = UUID.randomUUID()
     private val subscribedRef = new AtomicBoolean(false)
     private val usernameRef   = new AtomicReference[Option[String]](None)
     private val usertypeRef   = new AtomicReference[Option[String]](None)

@@ -15,17 +15,17 @@ import org.http4s.websocket.WebSocketFrame._
 
 object Http4sWebsocketServer {
   private val logger = Logger(getClass)
-  def start[F[_]: ConcurrentEffect: ContextShift: Timer](
+  def start[F[_]: ConcurrentEffect: ContextShift: Timer: Conf](
     wsPipe: MsgStreamPipe[F]
   ): Stream[F, ExitCode] = new WebSocketServer[F](wsPipe).start
 
-  final class WebSocketServer[F[_]: ConcurrentEffect: ContextShift: Timer](
+  final class WebSocketServer[F[_]: ConcurrentEffect: ContextShift: Timer: Conf](
     wsPipe: MsgStreamPipe[F]
   ) extends Http4sDsl[F] {
 
     def start: Stream[F, ExitCode] =
       BlazeServerBuilder[F]
-        .bindHttp(conf.port)
+        .bindHttp(Conf[F].port)
         .withWebSockets(true)
         .withHttpApp(routes.orNotFound)
         .serve

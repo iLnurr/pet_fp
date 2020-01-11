@@ -10,7 +10,9 @@ import fs2ws.websocket.Helper._
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import sttp.model.ws.WebSocketFrame
 import Domain._
+import fs2ws.impl.ConfImpl
 import fs2ws.impl.MessageSerDe._
+import fs2ws.impl.State.ConnectedClients
 
 import scala.concurrent.ExecutionContext
 
@@ -33,6 +35,12 @@ class SystemSpec
   lazy val kafkaBootstrapServers: String =
     kafkaContainer.container.getBootstrapServers
   lazy val postgresUrl: String = postgreSQLContainer.jdbcUrl
+
+  implicit val conf: Conf[IO] = new ConfImpl {
+    override lazy val dbUrl: String = postgresUrl
+  }
+  implicit val clients: Clients[IO] =
+    ConnectedClients.create[IO].unsafeRunSync()
 
   it should "properly test" in {
     val receivePipe: Pipe[IO, String, Unit] =

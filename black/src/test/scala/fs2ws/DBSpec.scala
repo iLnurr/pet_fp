@@ -1,6 +1,5 @@
 package fs2ws
 
-import cats.effect.IO
 import fs2ws.Domain.User
 import fs2ws.impl.InMemoryDB
 import org.scalatest.{FlatSpec, Matchers}
@@ -8,8 +7,8 @@ import org.scalatest.{FlatSpec, Matchers}
 class DBSpec extends FlatSpec with Matchers {
   behavior.of("StorageReader/StorageWriter")
 
-  private val userReader: UserReader[IO] = InMemoryDB.Users
-  private val userWriter: UserWriter[IO] = InMemoryDB.Users
+  private val userReader = InMemoryDB.Users
+  private val userWriter = InMemoryDB.Users
   it should "properly get list, add, update, remove entities" in {
     (for {
       _ <- userReader.list.map(l => l.size shouldBe 2)

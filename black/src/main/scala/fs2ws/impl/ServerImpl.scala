@@ -1,34 +1,31 @@
 package fs2ws.impl
 
-import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, IO, Timer}
+import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, IO, Sync, Timer}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import fs2ws.Domain._
 import fs2ws._
 import fs2ws.impl.State._
-import scala.concurrent.duration._
 
-class ServerImpl(
-  val clients:  Clients[IO],
-  val core:     MsgStreamPipe[IO] => Stream[IO, ExitCode],
-  val services: Services[IO]
-)(
-  implicit ce:  ConcurrentEffect[IO],
-  timer:        Timer[IO],
-  contextShift: ContextShift[IO]
-) extends Server[IO, Message, Message, MsgStreamPipe] {
+import scala.concurrent.duration._
+import cats.syntax.all._
+import fs2ws.impl.kafka.{KafkaReader, KafkaWriter}
+
+class ServerImpl[F[_]: ConcurrentEffect: ContextShift: Timer: Conf: Clients: MessageService](
+  val core: MsgStreamPipe[F] => Stream[F, ExitCode]
+) extends Server[F, Message, Message, MsgStreamPipe] {
   private val logger = Logger("ServerImpl")
 
-  private val kafkaProducer = new MessageWriterImpl[IO]
-  def kafkaConsumer(): Stream[IO, Message] =
-    new MessageReaderImpl[IO].consume()
+  private val kafkaProducer = new KafkaWriter[F]
+  def kafkaConsumer(): Stream[F, Message] =
+    new KafkaReader[F].consume()
 
-  override def handler: (Message, WSClient[IO]) => IO[Message] =
+  override def handler: (Message, WSClient[F]) => F[Message] =
     (req, clientState) =>
       if (req.isInstanceOf[Command] && !clientState.privileged) {
-        IO.pure(not_authorized())
+        Sync[F].pure(not_authorized())
       } else {
-        services.handleReq(req).map {
+        MessageService[F].process(req).map {
           case Left(value) =>
             logger.error(value)
             empty
@@ -37,64 +34,66 @@ class ServerImpl(
         }
       }
 
-  override def start(): IO[Unit] =
+  override def start(): F[Unit] =
     core(pipe)
       .merge(processMsgFromKafka())
       .compile
       .drain
 
-  override def pipe: MsgStreamPipe[IO] =
+  override def pipe: MsgStreamPipe[F] =
     input =>
       Stream
-        .bracket(clients.register(Client()))(c => clients.unregister(c))
+        .bracket(Clients[F].register(Client()))(c => Clients[F].unregister(c))
         .flatMap { client =>
           val bufferStream = Stream
-            .awakeEvery[IO](5.seconds)
+            .awakeEvery[F](5.seconds)
             .flatMap(_ => Stream.emits(client.take()))
 
           bufferStream.merge(processMsgFromWS(input, client))
         }
 
   private def processMsgFromWS(
-    input:  Stream[IO, Message],
-    client: WSClient[IO]
-  ): Stream[IO, Message] =
+    input:  Stream[F, Message],
+    client: WSClient[F]
+  ): Stream[F, Message] =
     input.evalMap { request =>
       for {
-        clientState <- clients.get(client.id).map(_.getOrElse(client))
+        clientState <- Clients[F].get(client.id).map(_.getOrElse(client))
         _ = logger.info(s"Got request: $request")
         response <- handler(request, clientState)
         _ = logger.info(s"Response $response")
-        _ = updateStateAsync(clients, clientState, request, response)
+        _ = updateStateAsync(clientState, request, response)
       } yield response
     }
 
-  def processMsgFromKafka(): Stream[IO, Unit] =
+  def processMsgFromKafka(): Stream[F, Unit] =
     kafkaConsumer().evalMap(
       msg =>
-        clients
+        Clients[F]
           .subscribed()
           .map(_.foreach(_.add(msg)))
     )
 
   private def updateStateAsync(
-    clients:     Clients[IO],
-    clientState: WSClient[IO],
+    clientState: WSClient[F],
     request:     Message,
     response:    Message
   ): Unit =
-    updateState(clients, clientState, request, response)
-      .unsafeRunAsyncAndForget()
+    ConcurrentEffect[F]
+      .runAsync(
+        updateState(Clients[F], clientState, request, response)
+      )(_ => IO.unit)
+      .unsafeRunSync()
 
   private def updateState(
-    clients:     Clients[IO],
-    clientState: WSClient[IO],
+    clients:     Clients[F],
+    clientState: WSClient[F],
     request:     Message,
     response:    Message
-  ): IO[Unit] =
+  ): F[Unit] =
     response match {
       case _: table_added | _: table_updated | _: table_removed =>
-        services.tableList
+        MessageService[F].tableList
           .flatMap { message =>
             logger.info(s"ConnectedClients: broadcast $message")
             kafkaProducer.send(message).compile.drain

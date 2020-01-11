@@ -2,9 +2,23 @@ package fs2ws
 
 import java.util.UUID
 
-import cats.tagless.finalAlg
-import fs2ws.Domain.{DBEntity, Message}
+import cats.tagless._
 import fs2.Stream
+import fs2ws.Domain.{DBEntity, Message}
+
+trait Conf[F[_]] {
+  def port:                 Int
+  def kafkaBootstrapServer: String
+  def kafkaGroupId:         String
+  def kafkaMessageTopic:    String
+  def dbDriver:             String
+  def dbUrl:                String
+  def dbUser:               String
+  def dbPass:               String
+}
+object Conf {
+  def apply[F[_]](implicit inst: Conf[F]): Conf[F] = inst
+}
 
 @finalAlg
 trait JsonEncoder[F[_], A] {
@@ -26,7 +40,6 @@ trait WSClient[F[_]] {
   def updateState(message: Message): WSClient[F]
 }
 
-@finalAlg
 trait Clients[F[_]] {
   def get(id:          UUID):        F[Option[WSClient[F]]]
   def register(c:      WSClient[F]): F[WSClient[F]]
@@ -34,11 +47,21 @@ trait Clients[F[_]] {
   def update(toUpdate: WSClient[F]): F[Unit]
   def subscribed(): F[Seq[WSClient[F]]]
 }
+object Clients {
+  def apply[F[_]](implicit inst: Clients[F]): Clients[F] = inst
+}
+
+trait MessageService[F[_]] {
+  def process:   Message => F[Either[String, Message]]
+  def tableList: F[Message]
+}
+object MessageService {
+  def apply[F[_]](implicit inst: MessageService[F]): MessageService[F] = inst
+}
 
 @finalAlg
 trait Server[F[_], I, O, StreamPipe[_[_]]] {
   def handler: (I, WSClient[F]) => F[O]
-  def clients: Clients[F]
   def start(): F[Unit]
   def pipe:    StreamPipe[F]
 }

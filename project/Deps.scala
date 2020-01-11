@@ -3,7 +3,7 @@ object Deps {
   private object Versions {
     val cats        = "2.0.0"
     val enumeratum  = "1.5.13"
-    val catsTagless = "0.9"
+    val catsTagless = "0.10"
     val shapeless   = "2.3.3"
 
     val scalaLogging = "3.9.2"
@@ -59,11 +59,6 @@ object Deps {
     "org.typelevel" %% "cats-tagless-macros" % Versions.catsTagless
   )
 
-  private lazy val enumeratum = Seq(
-    "com.beachape" %% "enumeratum"       % Versions.enumeratum,
-    "com.beachape" %% "enumeratum-circe" % Versions.enumeratum
-  )
-
   private lazy val circe = Seq(
     "io.circe" %% "circe-core",
     "io.circe" %% "circe-generic",
@@ -86,38 +81,12 @@ object Deps {
     "org.http4s" %% "http4s-blaze-client" % Versions.http4sVersion
   )
 
-  private lazy val http4s_circe = Seq(
-    "org.http4s" %% "http4s-circe" % Versions.http4sVersion,
-    // Optional for auto-derivation of JSON codecs
-    "io.circe" %% "circe-generic" % Versions.circe,
-    // Optional for string interpolation to JSON model
-    "io.circe" %% "circe-literal" % Versions.circe
-  )
-
   private lazy val doobie = Seq(
     "org.tpolecat" %% "doobie-core"      % Versions.doobieVersion,
     "org.tpolecat" %% "doobie-h2"        % Versions.doobieVersion,
     "org.tpolecat" %% "doobie-hikari"    % Versions.doobieVersion, // HikariCP transactor.
     "org.tpolecat" %% "doobie-postgres"  % Versions.doobieVersion, // Postgres driver 42.2.8 + type mappings
     "org.tpolecat" %% "doobie-scalatest" % Versions.doobieVersion % "test" // ScalaTest support for typechecking statements.
-  )
-
-  private lazy val mysql = Seq(
-    "mysql" % "mysql-connector-java" % Versions.mysqlConnector
-  )
-
-  private lazy val mailer = Seq(
-    "com.github.daddykotex" %% "courier" % Versions.mailer
-  )
-
-  private lazy val pdf = Seq(
-    "io.github.cloudify" %% "spdf" % Versions.pdf
-  )
-
-  private lazy val kafkaStreams = Seq(
-    "org.apache.kafka" % "kafka-streams"        % Versions.kafkaStreams,
-    "org.apache.kafka" % "kafka-clients"        % Versions.kafkaStreams,
-    "org.apache.kafka" %% "kafka-streams-scala" % Versions.kafkaStreams
   )
 
   private lazy val fs2_kafka = Seq(

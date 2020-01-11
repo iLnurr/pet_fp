@@ -1,34 +1,38 @@
-package fs2ws.impl
+package fs2ws.impl.doobie
 
 import cats.effect.{Async, ContextShift}
 import cats.syntax.functor._
+import doobie.implicits._
 import doobie.util.query.Query0
 import fs2ws.DbReader
 import fs2ws.Domain.{DBEntity, Table, User}
-import doobie.implicits._
-import doobie.util.transactor.Transactor.Aux
 
-abstract class DbReaderImpl[F[_]: Async: ContextShift, T <: DBEntity](
-  db: DbImpl[F]
-) extends DbReader[F, T] {
+abstract class DoobieReader[F[_]: Async: ContextShift: DoobieService, T <: DBEntity]
+    extends DbReader[F, T] {
   def getByIdQuery(id:  Long):   Query0[T]
   def getByNameQuery(n: String): Query0[T]
   def listQuery: Query0[T]
 
-  implicit val xa: Aux[F, Unit] = db.startTransactor()
   override def getById(id: Long): F[Option[T]] =
-    db.selectStream(getByIdQuery(id)).compile.toList.map(_.headOption)
+    DoobieService[F]
+      .selectStream(getByIdQuery(id))
+      .compile
+      .toList
+      .map(_.headOption)
 
   override def getByName(n: String): F[Option[T]] =
-    db.selectStream(getByNameQuery(n)).compile.toList.map(_.headOption)
+    DoobieService[F]
+      .selectStream(getByNameQuery(n))
+      .compile
+      .toList
+      .map(_.headOption)
 
   override def list: F[Seq[T]] =
-    db.selectStream(listQuery).compile.toVector.map(_.toSeq)
+    DoobieService[F].selectStream(listQuery).compile.toVector.map(_.toSeq)
 }
 
-class UserReaderImpl[F[_]: Async: ContextShift](
-  db: DbImpl[F]
-) extends DbReaderImpl[F, User](db) {
+class UserReader[F[_]: Async: ContextShift: DoobieService]
+    extends DoobieReader[F, User] {
   override def getByIdQuery(id: Long): Query0[User] =
     sql"select * from users where id = $id".query[User]
 
@@ -37,10 +41,12 @@ class UserReaderImpl[F[_]: Async: ContextShift](
 
   override def listQuery: Query0[User] = sql"select * from users".query[User]
 }
+object UserReader {
+  def apply[F[_]](implicit inst: UserReader[F]): UserReader[F] = inst
+}
 
-class TableReaderImpl[F[_]: Async: ContextShift](
-  db: DbImpl[F]
-) extends DbReaderImpl[F, Table](db) {
+class TableReader[F[_]: Async: ContextShift: DoobieService]
+    extends DoobieReader[F, Table] {
   override def getByIdQuery(id: Long): Query0[Table] =
     sql"select * from tables where id = $id".query[Table]
 
@@ -48,4 +54,7 @@ class TableReaderImpl[F[_]: Async: ContextShift](
     sql"select * from tables where name = $n".query[Table]
 
   override def listQuery: Query0[Table] = sql"select * from tables".query[Table]
+}
+object TableReader {
+  def apply[F[_]](implicit inst: TableReader[F]): TableReader[F] = inst
 }
