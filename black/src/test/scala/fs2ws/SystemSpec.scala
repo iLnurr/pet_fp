@@ -10,9 +10,16 @@ import fs2ws.websocket.Helper._
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import sttp.model.ws.WebSocketFrame
 import Domain._
-import fs2ws.impl.ConfImpl
+import fs2ws.impl.{ConfImpl, MessageServiceImpl}
 import fs2ws.impl.MessageSerDe._
 import fs2ws.impl.State.ConnectedClients
+import fs2ws.impl.doobie.{
+  DoobieService,
+  TableReader,
+  TableWriter,
+  UserReader,
+  UserWriter
+}
 
 import scala.concurrent.ExecutionContext
 
@@ -41,6 +48,12 @@ class SystemSpec
   }
   implicit val clients: Clients[IO] =
     ConnectedClients.create[IO].unsafeRunSync()
+  implicit val db = new DoobieService[IO]
+  implicit val userReader:     UserReader[IO]     = new UserReader[IO]
+  implicit val userWriter:     UserWriter[IO]     = new UserWriter[IO]
+  implicit val tableReader:    TableReader[IO]    = new TableReader[IO]
+  implicit val tableWriter:    TableWriter[IO]    = new TableWriter[IO]
+  implicit val messageService: MessageService[IO] = new MessageServiceImpl[IO]
 
   it should "properly test" in {
     val receivePipe: Pipe[IO, String, Unit] =
@@ -143,7 +156,7 @@ class SystemSpec
 
   override protected def beforeAll(): Unit = {
     container.start()
-    Starter.start().map(_ => ()).unsafeRunAsyncAndForget()
+    Starter.start().unsafeRunAsyncAndForget()
   }
 
   override protected def afterAll(): Unit =

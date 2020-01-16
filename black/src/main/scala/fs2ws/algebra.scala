@@ -75,6 +75,7 @@ trait DbReader[F[_], T <: DBEntity] {
 
 @finalAlg
 trait DbWriter[F[_], T <: DBEntity] {
+  def createTables(): F[Either[Throwable, Int]]
   def add(after_id: Long, ent: T): F[Either[Throwable, T]]
   def update(ent:   T): F[Either[Throwable, Unit]]
   def remove(id:    Long): F[Either[Throwable, Unit]]

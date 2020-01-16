@@ -19,6 +19,12 @@ object Main extends IOApp {
   implicit val conf: Conf[IO]             = new ConfImpl
   implicit val clients: Clients[IO] =
     ConnectedClients.create[IO].unsafeRunSync()
+  implicit val db = new DoobieService[IO]
+  implicit val userReader:     UserReader[IO]     = new UserReader[IO]
+  implicit val userWriter:     UserWriter[IO]     = new UserWriter[IO]
+  implicit val tableReader:    TableReader[IO]    = new TableReader[IO]
+  implicit val tableWriter:    TableWriter[IO]    = new TableWriter[IO]
+  implicit val messageService: MessageService[IO] = new MessageServiceImpl[IO]
   override def run(args: List[String]): IO[ExitCode] =
     Starter.start()
 
@@ -26,20 +32,16 @@ object Main extends IOApp {
 
 object Starter {
   private val logger = Logger("Main")
-  def start[F[_]: ConcurrentEffect: ContextShift: Timer: Conf: Clients]()
-    : F[ExitCode] = {
-    implicit val db = new DoobieService[F]
-    implicit val userReader:     UserReader[F]     = new UserReader[F]
-    implicit val userWriter:     UserWriter[F]     = new UserWriter[F]
-    implicit val tableReader:    TableReader[F]    = new TableReader[F]
-    implicit val tableWriter:    TableWriter[F]    = new TableWriter[F]
-    implicit val messageService: MessageService[F] = new MessageServiceImpl[F]
+  def start[F[_]: ConcurrentEffect: ContextShift: Timer: Conf: Clients: DoobieService: UserReader: UserWriter: TableReader: TableWriter: MessageService]()
+    : F[ExitCode] =
     (for {
-      _ <- userWriter.add(
+      _ <- UserWriter[F].createTables()
+      _ <- TableWriter[F].createTables()
+      _ <- UserWriter[F].add(
         -1,
         User(Option(0L), "admin", "admin", UserType.ADMIN)
       )
-      _ <- userWriter.add(0, User(Option(1L), "un", "upwd", UserType.USER))
+      _ <- UserWriter[F].add(0, User(Option(1L), "un", "upwd", UserType.USER))
       _ <- new ServerImpl[F](
         Http4sWebsocketServer.start(_)
       ).start()
@@ -51,5 +53,4 @@ object Starter {
         ExitCode.Error
       }.pure[F]
     )
-  }
 }

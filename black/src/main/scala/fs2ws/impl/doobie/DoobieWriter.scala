@@ -9,9 +9,13 @@ import fs2ws.Domain.{DBEntity, Table, User}
 
 abstract class DoobieWriter[F[_]: Async: ContextShift: DoobieService, T <: DBEntity]
     extends DbWriter[F, T] {
+  def create(): Fragment
   def addSql(after_id: Long, ent: T): Fragment
   def updateSql(ent:   T): Fragment
   def removeSql(id:    Long): Fragment
+
+  def createTables(): F[Either[Throwable, Int]] =
+    DoobieService[F].upsert(create())
 
   override def add(after_id: Long, ent: T): F[Either[Throwable, T]] =
     DoobieService[F].upsert(addSql(after_id, ent)).map(_.map(_ => ent))
@@ -23,6 +27,16 @@ abstract class DoobieWriter[F[_]: Async: ContextShift: DoobieService, T <: DBEnt
 
 class UserWriter[F[_]: Async: ContextShift: DoobieService]
     extends DoobieWriter[F, User] {
+  def create(): Fragment = sql"""
+    CREATE TABLE users (
+      uid   SERIAL,
+      id BIGINT NOT NULL,
+      name VARCHAR NOT NULL,
+      password VARCHAR NOT NULL,
+      user_type VARCHAR NOT NULL
+    )
+  """
+
   override def addSql(after_id: Long, ent: User): Fragment =
     sql"insert into users(id,name,password,user_type) values (${after_id + 1},${ent.name},${ent.password},${ent.user_type})"
 
@@ -38,6 +52,14 @@ object UserWriter {
 
 class TableWriter[F[_]: Async: ContextShift: DoobieService]
     extends DoobieWriter[F, Table] {
+  def create(): Fragment = sql"""
+    CREATE TABLE tables (
+      uid   SERIAL,
+      id BIGINT NOT NULL,
+      name VARCHAR NOT NULL,
+      participants BIGINT NOT NULL
+    )
+  """
   override def addSql(after_id: Long, ent: Table): Fragment =
     sql"insert into tables(id,name,participants) values (${after_id + 1},${ent.name},${ent.participants})"
 
