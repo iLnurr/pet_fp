@@ -3,7 +3,7 @@ import sbt._
 
 object Settings {
   def commonSettings() = Seq(
-    scalaVersion := "2.12.8",
+    scalaVersion := "2.12.10",
     Compile / scalacOptions ++= compilerSettings_2_12,
     addCompilerPlugin(
       ("org.scalamacros" % "paradise" % "2.1.0").cross(CrossVersion.full)
