@@ -115,40 +115,40 @@ class SystemSpec
     ).unsafeRunSync()
   }
   it should "properly add table" in {
-    val t  = Table(name = "test", participants  = 0)
-    val t2 = Table(name = "test2", participants = 0)
+    val t  = Table(id = 1L.some, name = "test", participants  = 0)
+    val t2 = Table(id = 2L.some, name = "test2", participants = 0)
     testWebsockets(
       msgsToSend =
         List(login("admin", "admin"), add_table(-1, t), add_table(0, t2)),
       expected = List(
         login_successful("admin"),
-        table_added(-1, t.copy(id = 1L.some)),
-        table_added(0, t2.copy(id = 2L.some))
+        table_added(-1, t),
+        table_added(0, t2)
       )
     ).unsafeRunSync()
   }
   it should "properly update table" in {
-    val t       = Table(name = "test3", participants = 0)
-    val updated = t.copy(id  = 3L.some, name         = "updated")
+    val t       = Table(id    = 3L.some, name = "test3", participants = 0)
+    val updated = t.copy(name = "updated")
     testWebsockets(
       msgsToSend =
         List(login("admin", "admin"), add_table(-1, t), update_table(updated)),
       expected = List(
         login_successful("admin"),
-        table_added(-1, t.copy(id = 3L.some)),
+        table_added(-1, t),
         table_updated(updated)
       )
     ).unsafeRunSync()
   }
   it should "properly remove table" in {
     val id = 4L
-    val t  = Table(name = "test4", participants = 0)
+    val t  = Table(id = id.some, name = "test4", participants = 0)
     testWebsockets(
       msgsToSend =
         List(login("admin", "admin"), add_table(-1, t), remove_table(id)),
       expected = List(
         login_successful("admin"),
-        table_added(-1, t.copy(id = id.some)),
+        table_added(-1, t),
         table_removed(id)
       )
     ).unsafeRunSync()

@@ -2,6 +2,7 @@ package fs2ws.impl.doobie
 
 import cats.effect.{Async, ContextShift}
 import cats.syntax.functor._
+import cats.syntax.either._
 import doobie.implicits._
 import doobie.util.fragment.Fragment
 import fs2ws.DbWriter
@@ -28,7 +29,7 @@ abstract class DoobieWriter[F[_]: Async: ContextShift: DoobieService, T <: DBEnt
 class UserWriter[F[_]: Async: ContextShift: DoobieService]
     extends DoobieWriter[F, User] {
   def create(): Fragment = sql"""
-    CREATE TABLE users (
+    CREATE TABLE IF NOT EXISTS users (
       uid   SERIAL,
       id BIGINT NOT NULL,
       name VARCHAR NOT NULL,
@@ -41,7 +42,7 @@ class UserWriter[F[_]: Async: ContextShift: DoobieService]
     sql"insert into users(id,name,password,user_type) values (${after_id + 1},${ent.name},${ent.password},${ent.user_type})"
 
   override def updateSql(ent: User): Fragment =
-    sql"update users set name = ${ent.name} AND password = ${ent.password} AND user_type = ${ent.user_type} where id = ${ent.id}"
+    sql"update users set name = ${ent.name}, password = ${ent.password}, user_type = ${ent.user_type} where id = ${ent.id}"
 
   override def removeSql(id: Long): Fragment =
     sql"delete from users where id=$id"
@@ -53,7 +54,7 @@ object UserWriter {
 class TableWriter[F[_]: Async: ContextShift: DoobieService]
     extends DoobieWriter[F, Table] {
   def create(): Fragment = sql"""
-    CREATE TABLE tables (
+    CREATE TABLE IF NOT EXISTS tables (
       uid   SERIAL,
       id BIGINT NOT NULL,
       name VARCHAR NOT NULL,
@@ -64,7 +65,7 @@ class TableWriter[F[_]: Async: ContextShift: DoobieService]
     sql"insert into tables(id,name,participants) values (${after_id + 1},${ent.name},${ent.participants})"
 
   override def updateSql(ent: Table): Fragment =
-    sql"update tables set name = ${ent.name} AND participants = ${ent.participants} where id = ${ent.id}"
+    sql"update tables set name = ${ent.name}, participants = ${ent.participants} where id = ${ent.id}"
 
   override def removeSql(id: Long): Fragment =
     sql"delete from tables where id=$id"

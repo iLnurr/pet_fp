@@ -66,10 +66,14 @@ object InMemoryDB {
 
     override def setIdIfEmpty: Long => User => User =
       newId => input => input.copy(id = Some(input.id.getOrElse(newId)))
+
+    override def createTables(): IO[Either[Throwable, Int]] = IO.pure(Right(1))
   }
   private val tablesRepo = new ArrayBuffer[Table]()
   object Tables extends DbInMemory[IO, Table](tablesRepo) {
     override def setIdIfEmpty: Long => Table => Table =
       newId => input => input.copy(id = Some(input.id.getOrElse(newId)))
+
+    override def createTables(): IO[Either[Throwable, Int]] = IO.pure(Right(1))
   }
 }

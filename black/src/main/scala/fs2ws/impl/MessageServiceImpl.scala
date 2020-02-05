@@ -48,7 +48,9 @@ class MessageServiceImpl[F[_]: Sync: UserReader: TableReader: TableWriter]
       }
     case update_table(table) =>
       TableWriter[F].update(table).map {
-        case Left(_) =>
+        case Left(er) =>
+          er.printStackTrace()
+
           update_failed(table.id.getOrElse(-1L))
         case Right(_) =>
           table_updated(table)
