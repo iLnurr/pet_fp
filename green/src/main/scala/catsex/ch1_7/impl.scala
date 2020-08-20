@@ -115,8 +115,14 @@ object impl {
         case Nil =>
           closed.foldLeft(Nil: List[BinaryTree[B]]) { (acc, maybeTree) =>
             maybeTree.map(_ :: acc).getOrElse {
-              val left :: right :: tail = acc
-              BinaryTree.branch(left, right) :: tail
+              acc match {
+                case left :: right :: tail =>
+                  BinaryTree.branch(left, right) :: tail
+                case List(one) =>
+                  List(one)
+                case Nil =>
+                  Nil
+              }
             }
           }
       }

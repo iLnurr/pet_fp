@@ -1,19 +1,12 @@
 package fs2ws.impl.kafka
 
-import cats.effect.{
-  Concurrent,
-  ConcurrentEffect,
-  ContextShift,
-  Resource,
-  Sync,
-  Timer
-}
+import cats.effect._
+import cats.implicits._
+import fs2.kafka._
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import fs2.kafka._
 import fs2ws.Conf
 import org.apache.kafka.clients.admin.NewTopic
-import cats.syntax.flatMap._
 
 object KafkaService {
   private val logger = Logger(getClass)
@@ -29,7 +22,7 @@ object KafkaService {
 
   def createTopic[F[_]: Concurrent: ContextShift: Conf]: F[Unit] =
     kafkaAdminClientResource[F](Conf[F].kafkaBootstrapServer).use { client =>
-      client.createTopic(new NewTopic(Conf[F].kafkaMessageTopic, 1, 1))
+      client.createTopic(new NewTopic(Conf[F].kafkaMessageTopic, 1, 1.toShort))
     }
 
   private def consumerSettings[F[_]: Sync: Conf]
@@ -49,7 +42,7 @@ object KafkaService {
   ): Stream[F, CommittableConsumerRecord[F, String, String]] = {
     logger.info(s"Consume from topic: `$topic``")
     consumerStream[F]
-      .using(consumerSettings)
+      .using(consumerSettings[F])
       .evalTap(_.subscribeTo(topic))
       .flatMap(_.stream)
   }

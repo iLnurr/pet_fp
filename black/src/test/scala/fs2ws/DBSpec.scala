@@ -2,9 +2,10 @@ package fs2ws
 
 import fs2ws.Domain.User
 import fs2ws.impl.InMemoryDB
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class DBSpec extends FlatSpec with Matchers {
+class DBSpec extends AnyFlatSpec with Matchers {
   behavior.of("StorageReader/StorageWriter")
 
   private val userReader = InMemoryDB.Users

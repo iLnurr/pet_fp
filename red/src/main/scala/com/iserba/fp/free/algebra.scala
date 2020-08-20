@@ -5,8 +5,6 @@ import java.util.UUID
 import com.iserba.fp._
 import com.iserba.fp.utils.Free
 
-import scala.language.{higherKinds, implicitConversions}
-
 object algebra {
   sealed trait ServerAlg[T]
   case class RunServer() extends ServerAlg[ServerChannel]

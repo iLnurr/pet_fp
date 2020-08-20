@@ -2,7 +2,6 @@ package fs2ws.impl.doobie
 
 import cats.effect.{Async, ContextShift}
 import cats.syntax.functor._
-import cats.syntax.either._
 import doobie.implicits._
 import doobie.util.fragment.Fragment
 import fs2ws.DbWriter

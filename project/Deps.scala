@@ -1,26 +1,20 @@
 import sbt._
 object Deps {
   private object Versions {
-    val cats        = "2.0.0"
-    val enumeratum  = "1.5.13"
-    val catsTagless = "0.10"
+    val cats        = "2.1.1"
+    val catsTagless = "0.11"
     val shapeless   = "2.3.3"
 
     val scalaLogging = "3.9.2"
     val logback      = "1.2.3"
 
-    val circe         = "0.11.1"
-    val http4sVersion = "0.20.13"
+    val circe         = "0.13.0"
+    val http4sVersion = "0.21.7"
     val sttp          = "2.0.0-RC5"
 
-    val doobieVersion  = "0.8.6"
-    val mysqlConnector = "8.0.18"
+    val doobieVersion = "0.9.0"
 
-    val mailer = "2.0.0"
-    val pdf    = "1.4.0"
-
-    val kafkaStreams = "2.3.0"
-    val fs2_kafka    = "0.20.2"
+    val fs2_kafka = "1.0.0"
 
     val scalaTest             = "3.0.8"
     val testcontainers        = "0.34.1"
@@ -42,7 +36,6 @@ object Deps {
     "org.testcontainers"           % "postgresql"                      % Versions.postgresTestcontainer,
     "org.testcontainers"           % "kafka"                           % Versions.kafkaTestContainer,
     "org.testcontainers"           % "mysql"                           % Versions.mysqlTestcontainer,
-    "org.apache.kafka"             % "kafka-streams-test-utils"        % Versions.kafkaStreams,
     "com.softwaremill.sttp.client" %% "async-http-client-backend-fs2"  % Versions.sttp // test with websocket client
   ).map(_ % Test)
 
@@ -90,7 +83,7 @@ object Deps {
   )
 
   private lazy val fs2_kafka = Seq(
-    "com.ovoenergy" %% "fs2-kafka" % Versions.fs2_kafka
+    "com.github.fd4s" %% "fs2-kafka" % Versions.fs2_kafka
   )
 
   lazy val redProjectDeps: Seq[ModuleID] = Seq()

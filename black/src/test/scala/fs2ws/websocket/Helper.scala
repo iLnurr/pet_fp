@@ -12,7 +12,6 @@ import sttp.client.asynchttpclient.fs2.{
 }
 import fs2.{Pipe, Stream}
 import fs2ws.Domain.{ping, pong, Message}
-import sttp.client.ws._
 import sttp.model.ws.WebSocketFrame
 
 import scala.util.Random

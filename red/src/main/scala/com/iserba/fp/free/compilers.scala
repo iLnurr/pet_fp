@@ -11,7 +11,6 @@ import com.iserba.fp.utils.StreamProcessHelper._
 import com.iserba.fp.utils.{Free, Monad}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.language.{higherKinds, implicitConversions}
 
 object compilers {
   implicit val connFreeMonad: Monad[Free[ConnectionAlg, *]] =
@@ -22,10 +21,8 @@ object compilers {
   private val connectionToServerInterpreter = new AlgInterpreter[ServerAlg]
 
   // RunClient -> ClientConnect -> (serverChannel)
-  def runClientFree(serverId: UUID)(
-    implicit
-    serverConnections: Map[UUID, RequestResponseChannel],
-    ec:                ExecutionContext
+  def runClientFree(serverId:   UUID)(
+    implicit serverConnections: Map[UUID, RequestResponseChannel]
   ): Future[RequestResponseChannel] =
     runClient(serverId)
       .foldMap(clientToConnectionInterpreter)

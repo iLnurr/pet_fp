@@ -2,7 +2,6 @@ package shapelessex.ch6
 
 import shapeless._
 import cats.Monoid
-import cats.instances.all._
 import shapeless.labelled.{field, FieldType}
 import shapeless.ops._
 import shapelessex.ch6.algebra.Migration

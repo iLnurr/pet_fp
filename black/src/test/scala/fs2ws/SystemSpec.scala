@@ -7,7 +7,7 @@ import com.dimafeng.testcontainers._
 import com.typesafe.scalalogging.StrictLogging
 import fs2.{Pipe, Stream}
 import fs2ws.websocket.Helper._
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
 import sttp.model.ws.WebSocketFrame
 import Domain._
 import fs2ws.impl.{ConfImpl, MessageServiceImpl}
@@ -20,11 +20,13 @@ import fs2ws.impl.doobie.{
   UserReader,
   UserWriter
 }
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.ExecutionContext
 
 class SystemSpec
-    extends FlatSpec
+    extends AnyFlatSpec
     with Matchers
     with BeforeAndAfterAll
     with StrictLogging {

@@ -2,9 +2,11 @@ package fs2ws
 
 import fs2ws.Domain.{login, login_successful, remove_table, Message}
 import fs2ws.impl.JsonSerDe.{decoder, encoder}
-import org.scalatest.{Assertion, FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.Assertion
+import org.scalatest.matchers.should.Matchers
 
-class JsonSerDeSpec extends FlatSpec with Matchers {
+class JsonSerDeSpec extends AnyFlatSpec with Matchers {
   behavior.of("JsonEncoder/JsonDecoder")
 
   it should "properly encode and decode messages" in {

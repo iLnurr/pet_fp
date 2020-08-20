@@ -7,8 +7,6 @@ import com.iserba.fp.free.algebra._
 import com.iserba.fp.utils.Free.{~>, Translate}
 import com.iserba.fp.utils.{Free, Monad}
 
-import scala.language.{higherKinds, implicitConversions}
-
 object interpreters {
   def serverToConnectionInterpreter: Translate[ServerAlg, Connection] =
     new (ServerAlg ~> Connection) {

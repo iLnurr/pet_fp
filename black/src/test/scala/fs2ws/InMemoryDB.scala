@@ -44,6 +44,7 @@ object InMemoryDB {
             .find(_.id == ent.id)
             .foreach(e => buffer -= e)
           buffer.append(ent)
+          ()
         }.toEither
       }
 

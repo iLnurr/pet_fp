@@ -18,16 +18,16 @@ object main extends App {
   // records
   import shapeless.record._
   val v1 = LabelledGeneric[V1].to(V1(1, "1"))
-  assert(v1.get('i) == 1)
-  assert(v1.get('s) == "1")
+  assert(v1.get(Symbol("i")) == 1)
+  assert(v1.get(Symbol("s")) == "1")
 
-  val v12 = v1.updated('i, 2)
-  assert(v12.get('i) == 2)
+  val v12 = v1.updated(Symbol("i"), 2)
+  assert(v12.get(Symbol("i")) == 2)
 
-  val v13 = v12.updateWith('i)(3 + _)
-  assert(v13.get('i) == 5)
+  val v13 = v12.updateWith(Symbol("i"))(3 + _)
+  assert(v13.get(Symbol("i")) == 5)
 
-  val (removedInt, v14) = v1.remove('i)
+  val (removedInt, v14) = v1.remove(Symbol("i"))
   assert(removedInt == 1)
   assert(v14.toMap.size == 1)
 }

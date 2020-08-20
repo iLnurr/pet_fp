@@ -4,7 +4,6 @@ import com.iserba.fp.utils
 import com.iserba.fp.utils.Free.Suspend
 import com.iserba.fp.utils.Monad.MonadCatch
 
-import scala.language.higherKinds
 import scala.util.{Failure, Success, Try}
 
 trait IOWrap[F[_]] {

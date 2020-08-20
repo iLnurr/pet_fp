@@ -13,6 +13,8 @@ import org.http4s.server.websocket._
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame._
 
+import scala.concurrent.ExecutionContext
+
 object Http4sWebsocketServer {
   private val logger = Logger(getClass)
   def start[F[_]: ConcurrentEffect: ContextShift: Timer: Conf](
@@ -24,7 +26,7 @@ object Http4sWebsocketServer {
   ) extends Http4sDsl[F] {
 
     def start: Stream[F, ExitCode] =
-      BlazeServerBuilder[F]
+      BlazeServerBuilder[F](ExecutionContext.global)
         .bindHttp(Conf[F].port)
         .withWebSockets(true)
         .withHttpApp(routes.orNotFound)
