@@ -33,7 +33,6 @@ object Deps {
     "com.dimafeng"                 %% "testcontainers-scala-scalatest"  % Versions.testcontainers,
     "com.dimafeng"                 %% "testcontainers-scala-postgresql" % Versions.testcontainers,
     "com.dimafeng"                 %% "testcontainers-scala-kafka"      % Versions.testcontainers,
-    "com.dimafeng"                 %% "testcontainers-scala-mysql"      % Versions.testcontainers,
     "com.softwaremill.sttp.client" %% "async-http-client-backend-fs2"   % Versions.sttp // test with websocket client
   ).map(_ % Test)
 
