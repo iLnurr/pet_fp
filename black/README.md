@@ -1,5 +1,12 @@
 ### WebSocket server.
 
+Server that interacts with clients through a websocket, 
+stores the state of clients in runtime, 
+stores commands from clients in kafka, and executes them. 
+Commands in the current implementation are user and room (table) entity managing, 
+the user can execute different commands depending on the privileges, each room can have several participants.
+Stack - scala, kafka, postgres, doobie, fs2
+
 ### Websockets API
 #### Authentication 
 
