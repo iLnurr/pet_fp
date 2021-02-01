@@ -5,6 +5,8 @@ object Deps {
     val catsTagless = "0.11"
     val shapeless   = "2.3.3"
 
+    val config = "1.3.4"
+
     val scalaLogging = "3.9.2"
     val logback      = "1.2.3"
 
@@ -16,11 +18,8 @@ object Deps {
 
     val fs2_kafka = "1.0.0"
 
-    val scalaTest             = "3.0.8"
-    val testcontainers        = "0.34.1"
-    val kafkaTestContainer    = "1.12.3"
-    val postgresTestcontainer = "1.12.3"
-    val mysqlTestcontainer    = "1.12.3"
+    val scalaTest      = "3.0.8"
+    val testcontainers = "0.38.8"
   }
 
   private lazy val logging = Seq(
@@ -30,13 +29,12 @@ object Deps {
   )
 
   private lazy val testDeps = Seq(
-    "org.scalatest"                %% "scalatest"                      % Versions.scalaTest,
-    "com.dimafeng"                 %% "testcontainers-scala"           % Versions.testcontainers,
-    "com.dimafeng"                 %% "testcontainers-scala-scalatest" % Versions.testcontainers,
-    "org.testcontainers"           % "postgresql"                      % Versions.postgresTestcontainer,
-    "org.testcontainers"           % "kafka"                           % Versions.kafkaTestContainer,
-    "org.testcontainers"           % "mysql"                           % Versions.mysqlTestcontainer,
-    "com.softwaremill.sttp.client" %% "async-http-client-backend-fs2"  % Versions.sttp // test with websocket client
+    "org.scalatest"                %% "scalatest"                       % Versions.scalaTest,
+    "com.dimafeng"                 %% "testcontainers-scala-scalatest"  % Versions.testcontainers,
+    "com.dimafeng"                 %% "testcontainers-scala-postgresql" % Versions.testcontainers,
+    "com.dimafeng"                 %% "testcontainers-scala-kafka"      % Versions.testcontainers,
+    "com.dimafeng"                 %% "testcontainers-scala-mysql"      % Versions.testcontainers,
+    "com.softwaremill.sttp.client" %% "async-http-client-backend-fs2"   % Versions.sttp // test with websocket client
   ).map(_ % Test)
 
   private lazy val cats = Seq(
@@ -61,7 +59,7 @@ object Deps {
   ).map(_ % Versions.circe)
 
   private lazy val conf = Seq(
-    "com.typesafe" % "config" % "1.3.4"
+    "com.typesafe" % "config" % Versions.config
   )
 
   private lazy val shapeless = Seq(

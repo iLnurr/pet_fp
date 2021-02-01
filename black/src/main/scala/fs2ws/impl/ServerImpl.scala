@@ -20,20 +20,6 @@ class ServerImpl[F[_]: ConcurrentEffect: ContextShift: Timer: Conf: Clients: Mes
   def kafkaConsumer(): Stream[F, Message] =
     new KafkaReader[F].consume()
 
-  override def handler: (Message, WSClient[F]) => F[Message] =
-    (req, clientState) =>
-      if (req.isInstanceOf[Command] && !clientState.privileged) {
-        Sync[F].pure(not_authorized())
-      } else {
-        MessageService[F].process(req).map {
-          case Left(value) =>
-            logger.error(value)
-            empty
-          case Right(value) =>
-            value
-        }
-      }
-
   override def start(): F[Unit] =
     core(pipe)
       .merge(processMsgFromKafka())
@@ -65,6 +51,20 @@ class ServerImpl[F[_]: ConcurrentEffect: ContextShift: Timer: Conf: Clients: Mes
         _ = updateStateAsync(clientState, request, response)
       } yield response
     }
+
+  override def handler: (Message, WSClient[F]) => F[Message] =
+    (req, clientState) =>
+      if (req.isInstanceOf[Command] && !clientState.privileged) {
+        Sync[F].pure(not_authorized())
+      } else {
+        MessageService[F].process(req).map {
+          case Left(value) =>
+            logger.error(value)
+            empty
+          case Right(value) =>
+            value
+        }
+      }
 
   def processMsgFromKafka(): Stream[F, Unit] =
     kafkaConsumer().evalMap(

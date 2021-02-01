@@ -21,16 +21,6 @@ object Conf {
 }
 
 @finalAlg
-trait JsonEncoder[F[_], A] {
-  def toJson(value: A): F[String]
-}
-
-@finalAlg
-trait JsonDecoder[F[_], A] {
-  def fromJson(json: String): F[A]
-}
-
-@finalAlg
 trait WSClient[F[_]] {
   def id: UUID
   def add(message: Message): Unit

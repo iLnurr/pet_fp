@@ -1,7 +1,7 @@
 package fs2ws
 
 import fs2ws.Domain.{login, login_successful, remove_table, Message}
-import fs2ws.impl.JsonSerDe.{decoder, encoder}
+import fs2ws.impl.MessageSerDe._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
@@ -16,8 +16,8 @@ class JsonSerDeSpec extends AnyFlatSpec with Matchers {
   }
 
   private def check(msg: Message): Assertion = {
-    val json    = encoder.toJson(msg).unsafeRunSync()
-    val decoded = decoder.fromJson(json).unsafeRunSync()
-    decoded shouldBe msg
+    val json    = encodeMsg(msg)
+    val decoded = decodeMsg(json)
+    decoded.contains(msg) shouldBe true
   }
 }
