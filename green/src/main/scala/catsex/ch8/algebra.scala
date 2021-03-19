@@ -2,7 +2,7 @@ package catsex.ch8
 
 import cats.instances.list._
 import cats.syntax.traverse._
-import cats.{Applicative, Functor}
+import cats.{ Applicative, Functor }
 
 trait UptimeClient[F[_]] {
   def getUptime(hostname: String): F[Int]

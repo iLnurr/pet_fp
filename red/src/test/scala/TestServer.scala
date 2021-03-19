@@ -4,9 +4,9 @@ import java.util.concurrent.atomic.AtomicLong
 
 import com.iserba.fp._
 import algebra._
-import com.iserba.fp.utils.{Monad, StreamProcess}
+import com.iserba.fp.utils.{ Monad, StreamProcess }
 import com.iserba.fp.utils.StreamProcess.Emit
-import com.iserba.fp.utils.StreamProcessHelper.{eval, eval_, resource}
+import com.iserba.fp.utils.StreamProcessHelper.{ eval, eval_, resource }
 import test.TestImpl._
 
 import scala.collection.mutable
@@ -32,7 +32,7 @@ object algebra {
   trait Connection {
     def getRequest: Option[Req]
     def addResponse(resp: Resp, req: Req): Resp
-    def makeRequest(r:    Req): Resp
+    def makeRequest(r: Req): Resp
     def close(): Unit =
       println(s"Close connection")
   }
@@ -62,7 +62,7 @@ object algebra {
 
   trait Client[F[_]] {
     def call(request: Req, conn: F[Connection])(
-      implicit F:     Monad[F]
+        implicit F: Monad[F]
     ): StreamProcess[F, Resp] =
       resource(conn) { c =>
         eval(F.unit {
@@ -108,16 +108,16 @@ object Test extends App {
 }
 
 object TestImpl {
-  case class RequestImpl[A](entity: Option[A]) extends Request[Option, A]
-  case class ResponseImpl[A](body:  Option[A]) extends Response[Option, A]
-  case class TestModel(id:          Option[Long], info: String) extends Model
+  case class RequestImpl[A](entity: Option[A])         extends Request[Option, A]
+  case class ResponseImpl[A](body: Option[A])          extends Response[Option, A]
+  case class TestModel(id: Option[Long], info: String) extends Model
 
   def ts                    = System.currentTimeMillis()
   private val idAccumulator = new AtomicLong(0L)
   def testModel(id: Long = idAccumulator.getAndIncrement()): Model =
     TestModel(Some(id), "")
-  def eventGen: Event = Event(ts = ts, model = testModel())
-  def eventsF = List(eventGen)
+  def eventGen: Event  = Event(ts = ts, model = testModel())
+  def eventsF          = List(eventGen)
   def testRequest: Req = RequestImpl(Some(eventGen))
 
   class TestConnection extends Connection {
@@ -133,10 +133,12 @@ object TestImpl {
     }
     def makeRequest(req: Req): Resp = {
       def tryToGet(req: Req): Resp =
-        responses.getOrElse(req, {
-          Thread.sleep(1000)
-          tryToGet(req)
-        })
+        responses.getOrElse(
+          req, {
+            Thread.sleep(1000)
+            tryToGet(req)
+          }
+        )
       val nl = req :: requests
       requests = nl
       tryToGet(req)

@@ -4,8 +4,8 @@ import java.util.UUID
 
 import com.iserba.fp._
 import com.iserba.fp.free.algebra._
-import com.iserba.fp.utils.Free.{~>, Translate}
-import com.iserba.fp.utils.{Free, Monad}
+import com.iserba.fp.utils.Free.{ ~>, Translate }
+import com.iserba.fp.utils.{ Free, Monad }
 
 object interpreters {
   def serverToConnectionInterpreter: Translate[ServerAlg, Connection] =
@@ -19,11 +19,11 @@ object interpreters {
     }
 
   class AlgInterpreter[Alg[_]](
-    implicit monad: Monad[Free[Alg, *]]
+      implicit monad: Monad[Free[Alg, *]]
   ) {
     type FreeAlg[A] = Free[Alg, A]
     def translate(
-      serverConnections: Map[UUID, RequestResponseChannel] = Map()
+        serverConnections: Map[UUID, RequestResponseChannel] = Map()
     ): Translate[ConnectionAlg, FreeAlg] =
       new (ConnectionAlg ~> FreeAlg) {
         override def apply[A](f: ConnectionAlg[A]): FreeAlg[A] = f match {

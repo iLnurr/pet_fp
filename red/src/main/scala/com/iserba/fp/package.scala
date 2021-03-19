@@ -3,8 +3,8 @@ package com.iserba
 import com.iserba.fp.model.Request
 import com.iserba.fp.model.Response
 import com.iserba.fp.utils.StreamProcess.Channel
-import com.iserba.fp.utils.StreamProcessHelper.{constantF, emit}
-import com.iserba.fp.utils.{Free, IOWrap, Monad, StreamProcess}
+import com.iserba.fp.utils.StreamProcessHelper.{ constantF, emit }
+import com.iserba.fp.utils.{ Free, IOWrap, Monad, StreamProcess }
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -16,7 +16,7 @@ package object fp {
   type RequestResponseChannel  = Channel[IO, Request, Response] //StreamProcess[IO, ResponseStreamByRequest]
 
   def createServerChannel(
-    converter: Converter[Request, Response]
+      converter: Converter[Request, Response]
   ): RequestResponseChannel =
     constantF[IO, ResponseStreamByRequest](req => emit(converter.convert(req)))
   val dummyLogic: Converter[Request, Response] =

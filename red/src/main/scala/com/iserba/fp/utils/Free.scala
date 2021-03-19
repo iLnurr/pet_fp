@@ -15,10 +15,9 @@ sealed trait Free[F[_], A] { self =>
     Free.runFree(this)(f)
 }
 object Free {
-  case class Return[F[_], A](a:     A) extends Free[F, A]
-  case class Suspend[F[_], A](s:    F[A]) extends Free[F, A]
-  case class FlatMap[F[_], A, B](s: Free[F, A], f: A => Free[F, B])
-      extends Free[F, B]
+  case class Return[F[_], A](a: A)                                  extends Free[F, A]
+  case class Suspend[F[_], A](s: F[A])                              extends Free[F, A]
+  case class FlatMap[F[_], A, B](s: Free[F, A], f: A => Free[F, B]) extends Free[F, B]
 
   def pure[F[_], A](a: A): Free[F, A] =
     Return[F, A](a)
@@ -30,12 +29,12 @@ object Free {
       override def unit[A](a: => A): Free[F, A] =
         Return[F, A](a)
       override def flatMap[A, B](
-        fa: Free[F, A]
-      )(f:  A => Free[F, B]): Free[F, B] =
+          fa: Free[F, A]
+      )(f: A => Free[F, B]): Free[F, B] =
         fa.flatMap(f)
     }
 
-  import scala.reflect.{classTag, ClassTag}
+  import scala.reflect.{ classTag, ClassTag }
   // @annotation.tailrec
   def runTrampoline[A: ClassTag](a: Free[Function0, A]): A = a match {
     case Return(value) => value
@@ -71,14 +70,14 @@ object Free {
   type ~>[F[_], G[_]] = Translate[F, G] // gives us infix syntax `F ~> G` for `Translate[F,G]`
 
   implicit val function0Monad = new Monad[Function0] {
-    def unit[A](a:       => A) = () => a
+    def unit[A](a: => A) = () => a
     def flatMap[A, B](a: Function0[A])(f: A => Function0[B]) =
       () => f(a())()
   }
 
   def runFree[F[_], G[_], A](
-    free: Free[F, A]
-  )(t:    F ~> G)(implicit G: Monad[G]): G[A] =
+      free: Free[F, A]
+  )(t: F ~> G)(implicit G: Monad[G]): G[A] =
     step(free) match {
       case Return(a)              => G.unit(a)
       case Suspend(r)             => t(r)

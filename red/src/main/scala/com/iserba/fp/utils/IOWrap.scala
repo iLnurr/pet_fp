@@ -4,7 +4,7 @@ import com.iserba.fp.utils
 import com.iserba.fp.utils.Free.Suspend
 import com.iserba.fp.utils.Monad.MonadCatch
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 trait IOWrap[F[_]] {
   type IO[A] = Free[F, A]
@@ -30,12 +30,12 @@ trait IOWrap[F[_]] {
       override def unit[A](a: => A): Free[F, A] =
         Return(a)
       override def flatMap[A, B](
-        a: Free[F, A]
+          a: Free[F, A]
       )(f: A => Free[F, B]): Free[F, B] =
         a.flatMap(f)
     }
   def IO[A](a: => A): IO[A] =
-    Suspend { parF.delay(a) }
+    Suspend(parF.delay(a))
   def now[A](a: A): IO[A] =
     Return(a)
   def fork[A](a: => IO[A]): IO[A] =

@@ -1,12 +1,12 @@
 package catsex.ch1_7
 
 import catsex._
-import cats.data.{EitherT, Writer, WriterT}
-import cats.{Eval, Id}
+import cats.data.{ EitherT, Writer, WriterT }
+import cats.{ Eval, Id }
 import catsex.ch1_7.algebra.PrintableSyntax._
 import catsex.ch1_7.domain._
 import catsex.ch1_7.impl._
-import catsex.ch1_7.domain.{BinaryTree, Box, Cat, EmptyTree}
+import catsex.ch1_7.domain.{ BinaryTree, Box, Cat, EmptyTree }
 
 object main extends App {
   import catsex.ch1_7.algebra.Printable._
@@ -21,7 +21,7 @@ object main extends App {
   import cats.syntax.show._
   import impl.catShow
 
-  val showInt:    Show[Int]    = Show.apply[Int]
+  val showInt: Show[Int]       = Show.apply[Int]
   val showString: Show[String] = Show.apply[String]
 
   showInt.show(123)
@@ -70,9 +70,9 @@ object main extends App {
   //check enabled "-Ypartial-unification"
   import cats.instances.function._
   import cats.syntax.functor._ // for map
-  val func1: Int    => Double = (x: Int) => x.toDouble
+  val func1: Int => Double    = (x: Int) => x.toDouble
   val func2: Double => Double = (y: Double) => y * 2
-  val func3: Int    => Double = func1.map(func2)
+  val func3: Int => Double    = func1.map(func2)
 
   import cats.syntax.contravariant._ // for contramap
   // contramap == prepending: (A => X contramap B => A) --> B => X
@@ -178,8 +178,8 @@ object main extends App {
   }
 
   /** Rewrite factorial so it captures the log messages in a Writer.
-    * Demonstrate that this allows us to reliably separate the logs for concurrent computations.
-    * */
+   *  Demonstrate that this allows us to reliably separate the logs for concurrent computations.
+   */
   import scala.concurrent.ExecutionContext.Implicits.global
   import scala.concurrent._
   import scala.concurrent.duration._
@@ -331,10 +331,9 @@ object main extends App {
   def tacticalReport(ally1: String, ally2: String): String =
     Await.result(
       canSpecialMove(ally1, ally2)
-        .map(
-          res =>
-            if (res) s"$ally1 and $ally2 can special move"
-            else s"$ally1 and $ally2 can't special move"
+        .map(res =>
+          if (res) s"$ally1 and $ally2 can special move"
+          else s"$ally1 and $ally2 can't special move"
         )
         .value,
       1.seconds

@@ -2,9 +2,9 @@ package fs2ws.impl
 
 import java.util.concurrent.atomic.AtomicLong
 
-import cats.effect.{IO, Sync}
+import cats.effect.{ IO, Sync }
 import cats.syntax.flatMap._
-import fs2ws.{DbReader, DbWriter}
+import fs2ws.{ DbReader, DbWriter }
 import fs2ws.Domain._
 
 import scala.collection.mutable.ArrayBuffer

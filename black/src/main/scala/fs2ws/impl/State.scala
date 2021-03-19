@@ -1,23 +1,22 @@
 package fs2ws.impl
 
 import java.util.UUID
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 
 import cats.Monad
 import cats.effect.concurrent.Ref
-import cats.effect.{ConcurrentEffect, ContextShift, Sync, Timer}
+import cats.effect.{ ConcurrentEffect, ContextShift, Sync, Timer }
 import com.typesafe.scalalogging.Logger
 import fs2ws.Domain._
-import fs2ws.{Clients, WSClient}
+import fs2ws.{ Clients, WSClient }
 
 import scala.collection.mutable.ListBuffer
 
 object State {
   private lazy val logger = Logger("clients")
 
-  case class Client[F[_]: Monad: ConcurrentEffect: ContextShift: Timer]()
-      extends WSClient[F] {
-    val id: UUID = UUID.randomUUID()
+  case class Client[F[_]: Monad: ConcurrentEffect: ContextShift: Timer]() extends WSClient[F] {
+    val id: UUID              = UUID.randomUUID()
     private val subscribedRef = new AtomicBoolean(false)
     private val usernameRef   = new AtomicReference[Option[String]](None)
     private val usertypeRef   = new AtomicReference[Option[String]](None)
@@ -68,7 +67,7 @@ object State {
 
   import cats.syntax.functor._
   case class ConnectedClients[F[_]: Sync: ConcurrentEffect: ContextShift: Timer](
-    ref: Ref[F, Map[UUID, WSClient[F]]]
+      ref: Ref[F, Map[UUID, WSClient[F]]]
   ) extends Clients[F] {
     def register(state: WSClient[F]): F[WSClient[F]] = {
       logger.info(s"ConnectedClients: Register $state")
@@ -107,8 +106,7 @@ object State {
   }
 
   object ConnectedClients {
-    def create[F[_]: Sync: ConcurrentEffect: ContextShift: Timer]
-      : F[ConnectedClients[F]] =
+    def create[F[_]: Sync: ConcurrentEffect: ContextShift: Timer]: F[ConnectedClients[F]] =
       Ref[F]
         .of(Map.empty[UUID, WSClient[F]])
         .map(ref => new ConnectedClients[F](ref))

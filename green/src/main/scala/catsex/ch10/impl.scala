@@ -1,9 +1,9 @@
 package catsex.ch10
 
-import cats.data.{NonEmptyList, Validated}
+import cats.data.{ NonEmptyList, Validated }
 import cats.syntax.apply._
 import cats.syntax.validated._
-import catsex.ch10.algebra.{Check, Predicate} // for valid and invalid
+import catsex.ch10.algebra.{ Check, Predicate } // for valid and invalid
 
 object impl {
   type Errors = NonEmptyList[String]

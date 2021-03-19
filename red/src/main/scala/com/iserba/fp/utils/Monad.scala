@@ -3,9 +3,9 @@ package com.iserba.fp.utils
 import Monad._
 
 trait Monad[F[_]] extends Applicative[F] {
-  def unit[A](a:       => A): F[A]
+  def unit[A](a: => A): F[A]
   def flatMap[A, B](a: F[A])(f: A => F[B]): F[B]
-  def join[A](mma:     F[F[A]]): F[A] =
+  def join[A](mma: F[F[A]]): F[A] =
     flatMap(mma)(ma => ma)
   def map[A, B](a: F[A])(f: A => B): F[B] =
     flatMap(a)(a => unit(f(a)))
@@ -47,14 +47,14 @@ object Monad {
   trait Monadic[F[_], A] {
     val F: Monad[F]
     def get: F[A]
-    private val a = get
-    def map[B](f:     A => B): F[B] = F.map(a)(f)
-    def flatMap[B](f: A => F[B]): F[B] = F.flatMap(a)(f)
-    def **[B](b:      F[B]) = F.map2(a, b)((_, _))
-    def *>[B](b:      F[B]) = F.map2(a, b)((_, b) => b)
+    private val a                                 = get
+    def map[B](f: A => B): F[B]                   = F.map(a)(f)
+    def flatMap[B](f: A => F[B]): F[B]            = F.flatMap(a)(f)
+    def **[B](b: F[B])                            = F.map2(a, b)((_, _))
+    def *>[B](b: F[B])                            = F.map2(a, b)((_, b) => b)
     def map2[B, C](b: F[B])(f: (A, B) => C): F[C] = F.map2(a, b)(f)
-    def as[B](b:      B): F[B] = F.as(a)(b)
-    def skip: F[Unit] = F.skip(a)
+    def as[B](b: B): F[B]                         = F.as(a)(b)
+    def skip: F[Unit]                             = F.skip(a)
   }
 
   /*
@@ -62,7 +62,7 @@ object Monad {
    * thrown.
    */
   trait MonadCatch[F[_]] extends Monad[F] {
-    def attempt[A](a: F[A]):      F[Either[Throwable, A]]
-    def fail[A](t:    Throwable): F[A]
+    def attempt[A](a: F[A]): F[Either[Throwable, A]]
+    def fail[A](t: Throwable): F[A]
   }
 }

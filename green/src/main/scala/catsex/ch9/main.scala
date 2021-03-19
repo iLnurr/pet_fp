@@ -3,7 +3,7 @@ package catsex.ch9
 import impl._
 import catsex._
 import cats.instances.future._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 

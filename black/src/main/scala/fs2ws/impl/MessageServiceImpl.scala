@@ -6,10 +6,9 @@ import cats.syntax.either._
 import cats.syntax.functor._
 import fs2ws.Domain._
 import fs2ws.MessageService
-import fs2ws.impl.doobie.{TableReader, TableWriter, UserReader}
+import fs2ws.impl.doobie.{ TableReader, TableWriter, UserReader }
 
-class MessageServiceImpl[F[_]: Sync: UserReader: TableReader: TableWriter]
-    extends MessageService[F] {
+class MessageServiceImpl[F[_]: Sync: UserReader: TableReader: TableWriter] extends MessageService[F] {
   def process: Message => F[Either[String, Message]] = {
     case command: Command =>
       processCommand(command).map(Right(_))

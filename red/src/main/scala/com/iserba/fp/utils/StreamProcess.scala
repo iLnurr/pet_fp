@@ -11,7 +11,7 @@ trait StreamProcess[F[_], O] {
   def map[O2](f: O => O2): StreamProcess[F, O2] = this match {
     case Await(req, recv) =>
       Await(req, recv.andThen(_.map(f)))
-    case Emit(h, t) => Try { Emit(f(h), t.map(f)) }
+    case Emit(h, t) => Try(Emit(f(h), t.map(f)))
     case Halt(err)  => Halt(err)
   }
   def ++(p: => StreamProcess[F, O]): StreamProcess[F, O] = this.onHalt {
@@ -104,8 +104,8 @@ trait StreamProcess[F[_], O] {
   }
 
   def tee[O2, O3](
-    p2: StreamProcess[F, O2]
-  )(t:  Tee[O, O2, O3]): StreamProcess[F, O3] =
+      p2: StreamProcess[F, O2]
+  )(t: Tee[O, O2, O3]): StreamProcess[F, O3] =
     t match {
       case Halt(e)    => this.kill.onComplete(p2.kill).onComplete(Halt(e))
       case Emit(h, t) => Emit(h, this.tee(p2)(t))
@@ -132,28 +132,27 @@ trait StreamProcess[F[_], O] {
     this ++ this.repeat
 
   def zipWith[O2, O3](
-    p2: StreamProcess[F, O2]
-  )(f:  (O, O2) => O3): StreamProcess[F, O3] =
+      p2: StreamProcess[F, O2]
+  )(f: (O, O2) => O3): StreamProcess[F, O3] =
     this.tee(p2)(StreamProcessHelper.zipWith(f))
 
   def zip[O2](p2: StreamProcess[F, O2]): StreamProcess[F, (O, O2)] =
     zipWith(p2)((_, _))
 
   def to[O2](sink: Sink[F, O]): StreamProcess[F, Unit] =
-    join { this.zipWith(sink)((o, f) => f(o)) }
+    join(this.zipWith(sink)((o, f) => f(o)))
 
   def through[O2](p2: Channel[F, O, O2]): StreamProcess[F, O2] =
-    join { this.zipWith(p2)((o, f) => f(o)) }
+    join(this.zipWith(p2)((o, f) => f(o)))
 }
 
 object StreamProcess {
   case class Await[F[_], A, O](
-    req:  F[A],
-    recv: Either[Throwable, A] => StreamProcess[F, O]
-  ) extends StreamProcess[F, O]
-  case class Emit[F[_], O](head: O, tail: StreamProcess[F, O])
-      extends StreamProcess[F, O]
-  case class Halt[F[_], O](err: Throwable) extends StreamProcess[F, O]
+      req: F[A],
+      recv: Either[Throwable, A] => StreamProcess[F, O]
+  )                                                            extends StreamProcess[F, O]
+  case class Emit[F[_], O](head: O, tail: StreamProcess[F, O]) extends StreamProcess[F, O]
+  case class Halt[F[_], O](err: Throwable)                     extends StreamProcess[F, O]
 
   case class Is[I]() {
     sealed trait f[X]
@@ -164,7 +163,7 @@ object StreamProcess {
 
   case class T[I, I2]() {
     sealed trait f[X] { def get: Either[I => X, I2 => X] }
-    val L = new f[I] { def get  = Left(identity) }
+    val L = new f[I] { def get = Left(identity) }
     val R = new f[I2] { def get = Right(identity) }
   }
   def L[I, I2] = T[I, I2]().L
@@ -188,13 +187,13 @@ object StreamProcessHelper {
 
   /** PROCESS */
   def emit[F[_], O](
-    head: O,
-    tail: StreamProcess[F, O] = Halt[F, O](End)
+      head: O,
+      tail: StreamProcess[F, O] = Halt[F, O](End)
   ): StreamProcess[F, O] =
     Emit(head, tail)
 
   def await[F[_], A, O](
-    req:  F[A]
+      req: F[A]
   )(recv: Either[Throwable, A] => StreamProcess[F, O]): StreamProcess[F, O] =
     Await(req, recv)
 
@@ -226,8 +225,8 @@ object StreamProcessHelper {
    * See `lines` below for an example use.
    */
   def resource[F[_], R, O](acquire: F[R])(
-    use:                            R => StreamProcess[F, O]
-  )(release:                        R => StreamProcess[F, O]): StreamProcess[F, O] =
+      use: R => StreamProcess[F, O]
+  )(release: R => StreamProcess[F, O]): StreamProcess[F, O] =
     eval(
       acquire
     ).flatMap { r =>
@@ -239,14 +238,14 @@ object StreamProcessHelper {
    * Like `resource`, but `release` is a single `IO` action.
    */
   def resource_[F[_], R, O](
-    acquire: F[R]
-  )(use:     R => StreamProcess[F, O])(release: R => F[Unit]): StreamProcess[F, O] =
+      acquire: F[R]
+  )(use: R => StreamProcess[F, O])(release: R => F[Unit]): StreamProcess[F, O] =
     resource(acquire)(use)(release.andThen(eval_[F, Unit, O]))
 
   /** PROCESS1 */
   def await1[I, O](
-    recv:     I => Process1[I, O],
-    fallback: => Process1[I, O] = halt1[I, O]
+      recv: I => Process1[I, O],
+      fallback: => Process1[I, O] = halt1[I, O]
   ): Process1[I, O] =
     Await(
       Get[I],
@@ -276,17 +275,15 @@ object StreamProcessHelper {
     else await1[I, I](i => emit(i, take(n - 1)))
 
   def takeWhile[I](f: I => Boolean): Process1[I, I] =
-    await1(
-      i =>
-        if (f(i)) emit(i, takeWhile(f))
-        else halt1
+    await1(i =>
+      if (f(i)) emit(i, takeWhile(f))
+      else halt1
     )
 
   def dropWhile[I](f: I => Boolean): Process1[I, I] =
-    await1(
-      i =>
-        if (f(i)) dropWhile(f)
-        else emit(i, id)
+    await1(i =>
+      if (f(i)) dropWhile(f)
+      else emit(i, id)
     )
 
   def id[I]: Process1[I, I] =
@@ -307,8 +304,8 @@ object StreamProcessHelper {
     Halt[T[I, I2]#f, O](End)
 
   def awaitL[I, I2, O](
-    recv:     I => Tee[I, I2, O],
-    fallback: => Tee[I, I2, O] = haltT[I, I2, O]
+      recv: I => Tee[I, I2, O],
+      fallback: => Tee[I, I2, O] = haltT[I, I2, O]
   ): Tee[I, I2, O] =
     await[T[I, I2]#f, I, O](L) {
       case Left(End) => fallback
@@ -317,8 +314,8 @@ object StreamProcessHelper {
     }
 
   def awaitR[I, I2, O](
-    recv:     I2 => Tee[I, I2, O],
-    fallback: => Tee[I, I2, O] = haltT[I, I2, O]
+      recv: I2 => Tee[I, I2, O],
+      fallback: => Tee[I, I2, O] = haltT[I, I2, O]
   ): Tee[I, I2, O] =
     await[T[I, I2]#f, I2, O](R) {
       case Left(End) => fallback
@@ -327,8 +324,8 @@ object StreamProcessHelper {
     }
 
   def emitT[I, I2, O](
-    h:  O,
-    tl: Tee[I, I2, O] = haltT[I, I2, O]
+      h: O,
+      tl: Tee[I, I2, O] = haltT[I, I2, O]
   ): Tee[I, I2, O] =
     emit(h, tl)
 

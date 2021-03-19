@@ -23,9 +23,8 @@ object impl {
     MyTC.pure[HNil](_ => Array.emptyByteArray)(_ => HNil)
 
   implicit def hlistInstance[H, T <: HList](
-    implicit
-    hInstance: Lazy[MyTC[H]], // wrap in Lazy
-    tInstance: MyTC[T]
+      implicit hInstance: Lazy[MyTC[H]], // wrap in Lazy
+      tInstance: MyTC[T]
   ): MyTC[H :: T] =
     MyTC.pure[H :: T] {
       case h :: t =>
@@ -35,14 +34,13 @@ object impl {
     }
 
   implicit def cnilInstance: MyTC[CNil] =
-    MyTC.pure[CNil](_ => throw new RuntimeException("Inconceviable c"))(
-      _ => throw new RuntimeException("Inconceviable b")
+    MyTC.pure[CNil](_ => throw new RuntimeException("Inconceviable c"))(_ =>
+      throw new RuntimeException("Inconceviable b")
     )
 
   implicit def coproductInstance[H, T <: Coproduct](
-    implicit
-    hInstance: Lazy[MyTC[H]], // wrap in Lazy
-    tInstance: MyTC[T]
+      implicit hInstance: Lazy[MyTC[H]], // wrap in Lazy
+      tInstance: MyTC[T]
   ): MyTC[H :+: T] =
     MyTC.pure[H :+: T] {
       case Inl(head) =>
@@ -54,12 +52,9 @@ object impl {
     }
 
   implicit def genericInstance[A, R](
-    implicit
-    generic:   Generic.Aux[A, R],
-    rInstance: Lazy[MyTC[R]] // wrap in Lazy
+      implicit generic: Generic.Aux[A, R],
+      rInstance: Lazy[MyTC[R]] // wrap in Lazy
   ): MyTC[A] =
-    MyTC.pure[A](a => rInstance.value.to(generic.to(a)))(
-      bytes => generic.from(rInstance.value.from(bytes))
-    )
+    MyTC.pure[A](a => rInstance.value.to(generic.to(a)))(bytes => generic.from(rInstance.value.from(bytes)))
 
 }

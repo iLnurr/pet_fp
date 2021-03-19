@@ -1,9 +1,9 @@
 package com.iserba.fp
 
 import com.iserba.fp.utils.Monad.MonadCatch
-import com.iserba.fp.utils.{Monad, Par}
+import com.iserba.fp.utils.{ Monad, Par }
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 object instances {
   object FutureM {
@@ -26,7 +26,7 @@ object instances {
         }
         def asyncF[A, B](f: A => B): A => Future[B] = a => lazyUnit(f(a))
         def asyncTask[A](
-          f: (Either[Throwable, A] => Unit) => Unit
+            f: (Either[Throwable, A] => Unit) => Unit
         ): Future[A] = {
           val p = Promise[A]()
           f.apply {
@@ -48,7 +48,7 @@ object instances {
       }
 
     implicit def monadCatchFuture(
-      implicit ec: ExecutionContext
+        implicit ec: ExecutionContext
     ): MonadCatch[Future] =
       new MonadCatch[Future] {
         def attempt[A](a: Future[A]): Future[Either[Throwable, A]] =

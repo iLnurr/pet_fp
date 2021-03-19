@@ -8,9 +8,9 @@ import com.iserba.fp.free.interpreters._
 import com.iserba.fp.model._
 import com.iserba.fp.utils.Free.freeMonad
 import com.iserba.fp.utils.StreamProcessHelper._
-import com.iserba.fp.utils.{Free, Monad}
+import com.iserba.fp.utils.{ Free, Monad }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 object compilers {
   implicit val connFreeMonad: Monad[Free[ConnectionAlg, *]] =
@@ -21,8 +21,8 @@ object compilers {
   private val connectionToServerInterpreter = new AlgInterpreter[ServerAlg]
 
   // RunClient -> ClientConnect -> (serverChannel)
-  def runClientFree(serverId:   UUID)(
-    implicit serverConnections: Map[UUID, RequestResponseChannel]
+  def runClientFree(serverId: UUID)(
+      implicit serverConnections: Map[UUID, RequestResponseChannel]
   ): Future[RequestResponseChannel] =
     runClient(serverId)
       .foldMap(clientToConnectionInterpreter)
@@ -31,7 +31,7 @@ object compilers {
 
   // RunServer -> RegisterServer -> ServerChannel -> ServerConnect -> (serverId, serverChannel)
   def runServerFree()(
-    implicit ec: ExecutionContext
+      implicit ec: ExecutionContext
   ): Future[(UUID, RequestResponseChannel)] =
     runServer()
       .foldMap(serverToConnectionInterpreter)
@@ -42,8 +42,8 @@ object compilers {
       .map(t => t.id -> t.channel)
 
   def makeRequest(
-    request: Request,
-    channel: RequestResponseChannel
+      request: Request,
+      channel: RequestResponseChannel
   ): Future[model.Response] = // TODO interpreter
     emit(request)
       .through(channel)

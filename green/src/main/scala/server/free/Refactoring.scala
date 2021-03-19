@@ -3,7 +3,7 @@ package server.free
 import java.util.UUID
 
 import cats.free.Free
-import cats.{~>, Monad}
+import cats.{ ~>, Monad }
 import cats.implicits._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -14,14 +14,14 @@ object Refactoring {
 
   object Initial {
     trait UserRepository {
-      def findUser(id:  UUID): Future[Option[User]]
+      def findUser(id: UUID): Future[Option[User]]
       def updateUser(u: User): Future[Unit]
     }
 
     class LoyaltyPoints(ur: UserRepository) {
       def addPoints(
-        userId:      UUID,
-        pointsToAdd: Int
+          userId: UUID,
+          pointsToAdd: Int
       ): Future[Either[String, Unit]] =
         ur.findUser(userId).flatMap {
           case None => Future.successful(Left("User not found"))
@@ -35,7 +35,7 @@ object Refactoring {
 
   object UsingFree {
     sealed trait UserRepositoryAlg[T]
-    case class FindUser(id:  UUID) extends UserRepositoryAlg[Option[User]]
+    case class FindUser(id: UUID)  extends UserRepositoryAlg[Option[User]]
     case class UpdateUser(u: User) extends UserRepositoryAlg[Unit]
 
     type UserRepository[T] = Free[UserRepositoryAlg, T]
@@ -45,8 +45,8 @@ object Refactoring {
     def updateUser(u: User): UserRepository[Unit] = Free.liftF(UpdateUser(u))
 
     def addPoints(
-      userId:      UUID,
-      pointsToAdd: Int
+        userId: UUID,
+        pointsToAdd: Int
     ): UserRepository[Either[String, Unit]] =
       findUser(userId).flatMap {
         case None => Free.pure(Left("User not found"))
@@ -73,7 +73,7 @@ object Refactoring {
 
   object UsingTagless {
     trait UserRepositoryAlg[F[_]] {
-      def findUser(id:  UUID): F[Option[User]]
+      def findUser(id: UUID): F[Option[User]]
       def updateUser(u: User): F[Unit]
     }
 

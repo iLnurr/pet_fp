@@ -1,9 +1,9 @@
 package catsex.ch1_7
 
-import cats.{Applicative, Traverse}
-import cats.data.{Reader, Validated}
+import cats.{ Applicative, Traverse }
+import cats.data.{ Reader, Validated }
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 object domain {
   final case class Cat(name: String, age: Int, color: String)
@@ -15,14 +15,13 @@ object domain {
     def leaf[A](a: A): BinaryTree[A] =
       BinaryLeaf(a)
   }
-  final case class BinaryBranch[A](left: BinaryTree[A], right: BinaryTree[A])
-      extends BinaryTree[A]
-  final case class BinaryLeaf[A](value: A) extends BinaryTree[A]
+  final case class BinaryBranch[A](left: BinaryTree[A], right: BinaryTree[A]) extends BinaryTree[A]
+  final case class BinaryLeaf[A](value: A)                                    extends BinaryTree[A]
 
   import cats.instances.vector._
   sealed trait Tree[+T] {
     def headOption: Option[T]
-    def isEmpty:    Boolean
+    def isEmpty: Boolean
     def traverse[F[_]: Applicative, B](f: T => F[B]): F[Tree[B]] = this match {
       case NonEmptyTree(head, children) =>
         val h: F[B] = f(head)
@@ -47,10 +46,9 @@ object domain {
     }
   }
 
-  case class NonEmptyTree[+T](head: T, children: Vector[Tree[T]])
-      extends Tree[T] {
+  case class NonEmptyTree[+T](head: T, children: Vector[Tree[T]]) extends Tree[T] {
     def headOption: Some[T] = Some(head)
-    def isEmpty = false
+    def isEmpty             = false
   }
 
   object NonEmptyTree {
@@ -68,10 +66,10 @@ object domain {
   //4.4 error handling
   type Result[A] = Either[Throwable, A] // 1 way
 
-  sealed trait LoginError extends Product with Serializable // 2 way
-  final case class UserNotFound(username:      String) extends LoginError
+  sealed trait LoginError                              extends Product with Serializable // 2 way
+  final case class UserNotFound(username: String)      extends LoginError
   final case class PasswordIncorrect(username: String) extends LoginError
-  case object UnexpectedError extends LoginError
+  case object UnexpectedError                          extends LoginError
   case class UserLogin(username: String, password: String)
   type LoginResult = Either[LoginError, UserLogin]
   def handleError(error: LoginError): Unit =
@@ -93,8 +91,8 @@ object domain {
   //4.8
   import cats.syntax.applicative._
   case class Db(
-    usernames: Map[Int, String],
-    passwords: Map[String, String]
+      usernames: Map[Int, String],
+      passwords: Map[String, String]
   )
   type DbReader[T] = Reader[Db, T]
   object DbReader {
@@ -149,7 +147,7 @@ object domain {
     }).toEither
 
   import cats.instances.list._ // for Semigroupal
-  import cats.syntax.apply._ // for mapN
+  import cats.syntax.apply._   // for mapN
   def readUser(m: FormData): FailSlow[User] =
     (
       readName(m).toValidated,

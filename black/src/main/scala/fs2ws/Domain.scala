@@ -24,49 +24,48 @@ object Domain {
 
   sealed trait Message
 
-  sealed trait Command extends Message // Only admins are allowed to use these commands
-  sealed trait Query extends Message
+  sealed trait Command   extends Message // Only admins are allowed to use these commands
+  sealed trait Query     extends Message
   sealed trait ResultMsg extends Message
 
   case class add_table(after_id: Long, table: Table) extends Command
-  case class update_table(table: Table) extends Command
-  case class remove_table(id:    Long) extends Command
+  case class update_table(table: Table)              extends Command
+  case class remove_table(id: Long)                  extends Command
 
   case class login(username: String, password: String) extends Query
 
-  case class subscribe_tables() extends Query
+  case class subscribe_tables()   extends Query
   case class unsubscribe_tables() extends Query
 
   case class ping(seq: Long) extends Query
 
   case class not_authorized() extends ResultMsg
 
-  case class login_failed() extends ResultMsg
+  case class login_failed()                      extends ResultMsg
   case class login_successful(user_type: String) extends ResultMsg
 
   case object empty extends ResultMsg
 
-  case class table_list(tables:    Seq[Table]) extends ResultMsg
-  case class update_failed(id:     Long) extends ResultMsg
-  case class removal_failed(id:    Long) extends ResultMsg
+  case class table_list(tables: Seq[Table])            extends ResultMsg
+  case class update_failed(id: Long)                   extends ResultMsg
+  case class removal_failed(id: Long)                  extends ResultMsg
   case class table_added(after_id: Long, table: Table) extends ResultMsg
-  case class add_failed(after_id:  Long) extends ResultMsg
-  case class table_removed(id:     Long) extends ResultMsg
-  case class table_updated(table:  Table) extends ResultMsg
+  case class add_failed(after_id: Long)                extends ResultMsg
+  case class table_removed(id: Long)                   extends ResultMsg
+  case class table_updated(table: Table)               extends ResultMsg
 
   case class pong(seq: Long) extends ResultMsg
 
   sealed trait DBEntity {
-    def id:   Option[Long]
+    def id: Option[Long]
     def name: String
   }
-  case class Table(id: Option[Long] = None, name: String, participants: Long)
-      extends DBEntity
+  case class Table(id: Option[Long] = None, name: String, participants: Long) extends DBEntity
   case class User(
-    id:        Option[Long] = None,
-    name:      String,
-    password:  String,
-    user_type: String
+      id: Option[Long] = None,
+      name: String,
+      password: String,
+      user_type: String
   ) extends DBEntity
   object UserType {
     val ADMIN = "admin"

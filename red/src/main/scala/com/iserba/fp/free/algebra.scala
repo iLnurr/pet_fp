@@ -7,9 +7,8 @@ import com.iserba.fp.utils.Free
 
 object algebra {
   sealed trait ServerAlg[T]
-  case class RunServer() extends ServerAlg[ServerChannel]
-  case class ServerChannel(id: UUID, channel: RequestResponseChannel)
-      extends ServerAlg[(UUID, RequestResponseChannel)]
+  case class RunServer()                                              extends ServerAlg[ServerChannel]
+  case class ServerChannel(id: UUID, channel: RequestResponseChannel) extends ServerAlg[(UUID, RequestResponseChannel)]
   type Server[T] = Free[ServerAlg, T]
   def runServer(): Server[ServerChannel] =
     Free.liftF(RunServer())
@@ -17,21 +16,20 @@ object algebra {
     Free.liftF(ServerChannel(id, createServerChannel(dummyLogic)))
 
   sealed trait ConnectionAlg[T]
-  case class ClientConnect(serverId: UUID)
-      extends ConnectionAlg[RequestResponseChannel]
+  case class ClientConnect(serverId: UUID)  extends ConnectionAlg[RequestResponseChannel]
   case class RegisterServer(serverId: UUID) extends ConnectionAlg[ServerChannel]
-  case class ServerConnect(serverId:  UUID, channel: RequestResponseChannel)
+  case class ServerConnect(serverId: UUID, channel: RequestResponseChannel)
       extends ConnectionAlg[(UUID, RequestResponseChannel)]
   type Connection[T] = Free[ConnectionAlg, T]
   def createClientConnection(
-    serverId: UUID
+      serverId: UUID
   ): Connection[RequestResponseChannel] =
     Free.liftF(ClientConnect(serverId))
   def registerServer(): Connection[ServerChannel] =
     Free.liftF(RegisterServer(UUID.randomUUID()))
   def connectServer(
-    serverId: UUID,
-    channel:  RequestResponseChannel
+      serverId: UUID,
+      channel: RequestResponseChannel
   ): Connection[(UUID, RequestResponseChannel)] =
     Free.liftF(ServerConnect(serverId, channel))
 

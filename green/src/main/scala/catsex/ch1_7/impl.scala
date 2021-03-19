@@ -1,9 +1,9 @@
 package catsex.ch1_7
 
-import cats.{Functor, Monad}
+import cats.{ Functor, Monad }
 import catsex.ch1_7.domain._
-import catsex.ch1_7.algebra.{Codec, Printable}
-import catsex.ch1_7.domain.{BinaryTree, Box, Cat}
+import catsex.ch1_7.algebra.{ Codec, Printable }
+import catsex.ch1_7.domain.{ BinaryTree, Box, Cat }
 
 import scala.annotation.tailrec
 
@@ -36,20 +36,14 @@ object impl {
   import cats.instances.string._
   import cats.syntax.show._
   implicit val catShow: Show[Cat] =
-    Show.show(
-      cat =>
-        s"${cat.name.show} is a ${cat.age.show} year-old ${cat.color.show} cat."
-    )
+    Show.show(cat => s"${cat.name.show} is a ${cat.age.show} year-old ${cat.color.show} cat.")
 
   import cats.Eq
   import cats.instances.int._
   import cats.instances.string._
   import cats.syntax.eq._
   implicit val catEq: Eq[Cat] =
-    Eq.instance[Cat](
-      (c1, c2) =>
-        c1.name === c2.name && c1.age === c2.age && c1.color === c2.color
-    )
+    Eq.instance[Cat]((c1, c2) => c1.name === c2.name && c1.age === c2.age && c1.color === c2.color)
 
   implicit val treeFunctor: Functor[BinaryTree] = new Functor[BinaryTree] {
     override def map[A, B](fa: BinaryTree[A])(f: A => B): BinaryTree[B] =
@@ -80,8 +74,8 @@ object impl {
       BinaryTree.leaf(x)
 
     override def flatMap[A, B](
-      fa: BinaryTree[A]
-    )(f:  A => BinaryTree[B]): BinaryTree[B] = fa match {
+        fa: BinaryTree[A]
+    )(f: A => BinaryTree[B]): BinaryTree[B] = fa match {
       case BinaryBranch(left, right) =>
         BinaryTree.branch(flatMap(left)(f), flatMap(right)(f))
       case BinaryLeaf(value) =>
@@ -99,12 +93,12 @@ object impl {
 
     // stack safe from https://stackoverflow.com/questions/44504790/cats-non-tail-recursive-tailrecm-method-for-monads
     override def tailRecM[A, B](
-      arg:  A
+        arg: A
     )(func: A => BinaryTree[Either[A, B]]): BinaryTree[B] = {
       @tailrec
       def loop(
-        open:   List[BinaryTree[Either[A, B]]],
-        closed: List[Option[BinaryTree[B]]]
+          open: List[BinaryTree[Either[A, B]]],
+          closed: List[Option[BinaryTree[B]]]
       ): List[BinaryTree[B]] = open match {
         case BinaryBranch(l, r) :: next =>
           loop(l :: r :: next, None :: closed)

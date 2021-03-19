@@ -7,8 +7,8 @@ import io.circe.parser._
 import io.circe.syntax._
 
 object MessageSerDe {
-  def decodeMsg: String  => Option[Message] = decode[Message](_).toOption
-  def encodeMsg: Message => String          = _.asJson.noSpaces
+  def decodeMsg: String => Option[Message] = decode[Message](_).toOption
+  def encodeMsg: Message => String         = _.asJson.noSpaces
   implicit val genDevConfig: Configuration =
     Configuration.default.withDiscriminator("$type")
 }

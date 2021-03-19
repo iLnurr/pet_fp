@@ -3,7 +3,7 @@ package test
 import com.iserba.fp.utils.StreamProcessHelper._
 import com.iserba.fp.utils.Monad.MonadCatch
 import com.iserba.fp.utils.Free._
-import com.iserba.fp.utils.{Free, StreamProcess}
+import com.iserba.fp.utils.{ Free, StreamProcess }
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -17,8 +17,8 @@ object TestStreamProcess extends App {
         a.map { v =>
           Right(v)
         }
-      override def fail[A](t:       Throwable): Option[A] = None
-      override def unit[A](a:       => A): Option[A] = Some(a)
+      override def fail[A](t: Throwable): Option[A] = None
+      override def unit[A](a: => A): Option[A]      = Some(a)
       override def flatMap[A, B](a: Option[A])(f: A => Option[B]): Option[B] =
         a.flatMap(f)
     }

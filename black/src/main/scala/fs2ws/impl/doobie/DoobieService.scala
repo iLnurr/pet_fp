@@ -1,6 +1,6 @@
 package fs2ws.impl.doobie
 
-import cats.effect.{Async, ContextShift}
+import cats.effect.{ Async, ContextShift }
 import cats.syntax.applicativeError._
 import doobie._
 import doobie.implicits._
@@ -10,16 +10,16 @@ import fs2ws.Conf
 
 class DoobieService[F[_]: Async: ContextShift: Conf] {
   def startTransactor(
-    driver: String = Conf[F].dbDriver,
-    url:    String = Conf[F].dbUrl,
-    user:   String = Conf[F].dbUser,
-    pass:   String = Conf[F].dbPass
+      driver: String = Conf[F].dbDriver,
+      url: String = Conf[F].dbUrl,
+      user: String = Conf[F].dbUser,
+      pass: String = Conf[F].dbPass
   ): Aux[F, Unit] =
     Transactor.fromDriverManager[F](
       driver = driver,
-      url    = url,
-      user   = user,
-      pass   = pass
+      url = url,
+      user = user,
+      pass = pass
     )
 
   implicit lazy val xa: Transactor[F] = startTransactor()

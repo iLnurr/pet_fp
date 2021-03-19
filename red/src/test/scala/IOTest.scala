@@ -2,7 +2,7 @@ package test
 
 import com.iserba.fp.parFIO
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import Helper._
 

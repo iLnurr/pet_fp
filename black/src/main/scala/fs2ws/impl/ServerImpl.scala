@@ -1,6 +1,6 @@
 package fs2ws.impl
 
-import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, IO, Sync, Timer}
+import cats.effect.{ ConcurrentEffect, ContextShift, ExitCode, IO, Sync, Timer }
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import fs2ws.Domain._
@@ -9,10 +9,10 @@ import fs2ws.impl.State._
 
 import scala.concurrent.duration._
 import cats.syntax.all._
-import fs2ws.impl.kafka.{KafkaReader, KafkaWriter}
+import fs2ws.impl.kafka.{ KafkaReader, KafkaWriter }
 
 class ServerImpl[F[_]: ConcurrentEffect: ContextShift: Timer: Conf: Clients: MessageService](
-  val core: MsgStreamPipe[F] => Stream[F, ExitCode]
+    val core: MsgStreamPipe[F] => Stream[F, ExitCode]
 ) extends Server[F, Message, Message, MsgStreamPipe] {
   private val logger = Logger("ServerImpl")
 
@@ -39,8 +39,8 @@ class ServerImpl[F[_]: ConcurrentEffect: ContextShift: Timer: Conf: Clients: Mes
         }
 
   private def processMsgFromWS(
-    input:  Stream[F, Message],
-    client: WSClient[F]
+      input: Stream[F, Message],
+      client: WSClient[F]
   ): Stream[F, Message] =
     input.evalMap { request =>
       for {
@@ -67,17 +67,16 @@ class ServerImpl[F[_]: ConcurrentEffect: ContextShift: Timer: Conf: Clients: Mes
       }
 
   def processMsgFromKafka(): Stream[F, Unit] =
-    kafkaConsumer().evalMap(
-      msg =>
-        Clients[F]
-          .subscribed()
-          .map(_.foreach(_.add(msg)))
+    kafkaConsumer().evalMap(msg =>
+      Clients[F]
+        .subscribed()
+        .map(_.foreach(_.add(msg)))
     )
 
   private def updateStateAsync(
-    clientState: WSClient[F],
-    request:     Message,
-    response:    Message
+      clientState: WSClient[F],
+      request: Message,
+      response: Message
   ): Unit =
     ConcurrentEffect[F]
       .runAsync(
@@ -86,10 +85,10 @@ class ServerImpl[F[_]: ConcurrentEffect: ContextShift: Timer: Conf: Clients: Mes
       .unsafeRunSync()
 
   private def updateState(
-    clients:     Clients[F],
-    clientState: WSClient[F],
-    request:     Message,
-    response:    Message
+      clients: Clients[F],
+      clientState: WSClient[F],
+      request: Message,
+      response: Message
   ): F[Unit] =
     response match {
       case _: table_added | _: table_updated | _: table_removed =>

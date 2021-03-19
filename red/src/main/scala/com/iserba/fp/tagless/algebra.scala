@@ -3,7 +3,7 @@ package com.iserba.fp.tagless
 import java.util.UUID
 
 import com.iserba.fp.RequestResponseChannel
-import com.iserba.fp.model.{Request, Response}
+import com.iserba.fp.model.{ Request, Response }
 
 object algebra {
   type ChannelOnDemand = () => RequestResponseChannel
@@ -18,8 +18,8 @@ object algebra {
 
   trait ClientAlg[F[_]] {
     def runClient(serverId: UUID)(implicit conn: ConnectionAlg[F]): F[Unit]
-    def makeRequest(r:      Request)(
-      implicit conn:        ConnectionAlg[F]
+    def makeRequest(r: Request)(
+        implicit conn: ConnectionAlg[F]
     ): F[Option[Response]]
   }
 }

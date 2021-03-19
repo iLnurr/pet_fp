@@ -18,11 +18,11 @@ import scala.concurrent.ExecutionContext
 object Http4sWebsocketServer {
   private val logger = Logger(getClass)
   def start[F[_]: ConcurrentEffect: ContextShift: Timer: Conf](
-    wsPipe: MsgStreamPipe[F]
+      wsPipe: MsgStreamPipe[F]
   ): Stream[F, ExitCode] = new WebSocketServer[F](wsPipe).start
 
   final class WebSocketServer[F[_]: ConcurrentEffect: ContextShift: Timer: Conf](
-    wsPipe: MsgStreamPipe[F]
+      wsPipe: MsgStreamPipe[F]
   ) extends Http4sDsl[F] {
 
     def start: Stream[F, ExitCode] =
