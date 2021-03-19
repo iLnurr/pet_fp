@@ -1,16 +1,15 @@
 import Deps._
 import Settings._
 
-name := "pet_fp"
-
-version := "0.1"
-
-resolvers += "Sonatype Public".at(
-  "https://oss.sonatype.org/content/groups/public/"
-)
-
 lazy val root = project
   .in(file("."))
+  .settings(
+    name := "pet_fp",
+    version := "0.1",
+    resolvers += "Sonatype Public".at(
+      "https://oss.sonatype.org/content/groups/public/"
+    )
+  )
   .aggregate(red, green, black)
 
 lazy val red = project
@@ -18,7 +17,7 @@ lazy val red = project
   .settings(commonSettings())
   .settings(
     version := "0.1",
-    name    := "redBookPetProject",
+    name := "redBookPetProject",
     libraryDependencies ++= redProjectDeps
   )
 
@@ -27,7 +26,7 @@ lazy val green = project
   .settings(commonSettings())
   .settings(
     version := "0.1",
-    name    := "scalaWithCatsPetProject",
+    name := "scalaWithCatsPetProject",
     libraryDependencies ++= greenProjectDeps
   )
 
@@ -36,6 +35,6 @@ lazy val black = project
   .settings(commonSettings())
   .settings(
     version := "0.1",
-    name    := "fs2WSserver",
+    name := "fs2WSserver",
     libraryDependencies ++= blackProjectDeps
   )
